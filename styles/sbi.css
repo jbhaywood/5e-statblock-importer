@@ -1,0 +1,17 @@
+#sbi-main-button {
+    width: 97%;
+}
+
+.sbi-button-container {
+    text-align: right;
+}
+
+#sbi-import-button {
+    width: 33%;
+}
+
+#sbi-input {
+    height: 500px;
+    margin-bottom: 5px;
+    resize: none;
+}

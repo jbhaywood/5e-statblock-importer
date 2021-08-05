@@ -1,0 +1,24 @@
+{
+    "name": "5e-statblock-importer",
+    "title": "5e Statblock Importer",
+    "description": "Import monster and NPC statblocks for D&D 5e",
+    "version": "1.0.0",
+    "author": "JHaywood",
+    "systems": [
+        "dnd5e"
+    ],
+    "esmodules": [
+        "./scripts/sbi.js"
+    ],
+    "styles": [
+        "./styles/sbi.css"
+    ],
+    "templates": [
+        "./templates/sbiWindow.html"
+    ],
+    "url": "",
+    "manifest": "",
+    "download": "",
+    "minimumCoreVersion": "0.8.0",
+    "compatibleCoreVersion": "0.8.8"
+}
