@@ -16,9 +16,9 @@
     "templates": [
         "./templates/sbiWindow.html"
     ],
-    "url": "",
-    "manifest": "",
-    "download": "",
+    "url": "https://github.com/jbhaywood/5e-statblock-importer",
+    "manifest": "https://raw.githubusercontent.com/jbhaywood/5e-statblock-importer/main/module.json",
+    "download": "https://github.com/jbhaywood/5e-statblock-importer/archive/v1.0.0.zip",
     "minimumCoreVersion": "0.8.0",
     "compatibleCoreVersion": "0.8.8"
 }
