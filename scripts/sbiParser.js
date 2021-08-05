@@ -17,7 +17,7 @@ export class sbiParser {
     static #armorRegex = /^(armor class) (?<ac>\d+)/i;
     static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( \+ \d+)?)\)/i;
     static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
-    static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/i;
+    static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|-|−]\d+)\)/g;
     static #abilitySavesRegex = /(?<name>\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b) (?<modifier>[\+|-]\d+)/ig;
     static #skillsRegex = /(?<name>\bacrobatics\b|\barcana\b|\banimal handling\b|\bathletics\b|\bdeception\b|\bhistory\b|\binsight\b|\bintimidation\b|\binvestigation\b|\bmedicine\b|\bnature\b|\bperception\b|\bperformance\b|\bpersuasion\b|\breligion\b|\bsleight of hand\b|\bstealth\b|\bsurvival\b) (?<modifier>[\+|-]\d+)/ig;
@@ -95,7 +95,7 @@ export class sbiParser {
                     }
                 }
                 else {
-                    const actionDescriptions = GetActionDescriptions(value);
+                    const actionDescriptions = this.GetActionDescriptions(value);
 
                     for (const actionDescription of actionDescriptions) {
                         const itemData = {};
@@ -395,8 +395,12 @@ export class sbiParser {
             }
 
             if (this.#abilityNamesRegex.test(line)) {
+                // TODO: Figure out why using the regex variable doesn't work, but using the same raw regex here does.
+                var abilityMatches = [...line.matchAll(/\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig)];
+                for (const match of abilityMatches) {
+                    foundAbilityNames.push(match[0]);
+                }
                 foundLines.push(l);
-                foundAbilityNames.push(line);
             }
             else {
                 const valueMatches = [...line.matchAll(this.#abilityValuesRegex)];
