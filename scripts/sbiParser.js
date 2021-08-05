@@ -654,7 +654,7 @@ export class sbiParser {
             sbiUtils.assignToObject(itemData, "data.activation.type", "none");
 
             if (name.toLowerCase() === "innate spellcasting") {
-                await this.SetSpellsAsync(description, itemData, actor);
+                await this.SetInnateSpellsAsync(description, itemData, actor);
             }
 
             const item = new Item(itemData);
@@ -680,7 +680,7 @@ export class sbiParser {
     // At will: dancing lights, detect magic, invisibility 
     // 3/day: charm person, faerie fire, mage armor 
     // 1/day: spike growth
-    static async SetSpellsAsync(description, itemData, actor) {
+    static async SetInnateSpellsAsync(description, itemData, actor) {
         const spellRegex = /at will:|\d\/day( each)?:/ig;
         const spellMatches = [...description.matchAll(spellRegex)];
         let allSpellNames = [];
