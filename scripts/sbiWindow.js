@@ -47,13 +47,6 @@ export class sbiWindow extends Application {
         // DEBUG
         // ###############################
         if (sbiConfig.options.debug) {
-            // Prep scene for testing
-            game.actors.forEach(t => {
-                if (!t.data.folder) {
-                    t.delete();
-                }
-            });
-
             const linesToAdd = [
                 "NAINA",
                 "Large dragon (shapechanger), lawful evil",

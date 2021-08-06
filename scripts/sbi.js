@@ -3,11 +3,15 @@ import { sbiWindow } from "./sbiWindow.js";
 
 /*
 TODO - Known Issues:
-- Legendary Actions not getting added.
-- Actions listed after the Innate Spellcasting block aren't recognized because spell lists don't use periods.
+- Actions listed after the spellcasting blocks aren't recognized because spell lists don't use periods.
 - Spells that require a roll don't work, with the message "Error: You must provide an embedded Document instance as the input for a PlaceableObject
 foundry.js:18511"
-- Features aren't going in the features section of the character sheet.
+
+FIXED
+- Legendary Actions get added.
+- Features go into the features section of the character sheet.
+- Spellcasting blocks are supported.
+- Attack ability is set correctly.
 */
 
 Hooks.on("renderActorDirectory", (app, html, data) => {

@@ -4,12 +4,15 @@
 - Paste statblock text into this box. It should follow WotC statblock formatting to be imported correctly.
 - You can edit the text to fix any errors and re-import if you need to.
     
-Known Issues (v1.0.1):
-- Legendary Actions aren't getting added for some reason.
-- Spellcasting blocks aren't supported correctly. They get added as an action, but don't get their spells added to the spellbook.
-- Actions listed after the Innate Spellcasting block aren't recognized. Workaround: Make sure there's a period at the end of the sentence before a new action or move the Innate Spellcasting block to be the last action in the Actions section.
-- Spells that require a roll cause an internal error and don't work when you click the die button. Workaround: Roll manually.
-- Feature type actions aren't going in the features section of the character sheet.
+Known Issues (v1.0.4):
+- Actions listed after the spellcasting blocks aren't recognized because spell lists don't use periods.
+
+FIXED
+- Legendary Actions get added.
+- Features go into the features section of the character sheet.
+- Spellcasting blocks are supported.
+- Attack ability is set correctly.
+- Spell attack rolls work correctly.
 
 Report bugs to https://github.com/jbhaywood/5e-statblock-importer and add the statblock you were trying to import."></textarea>
     <section class="sbi-button-container">

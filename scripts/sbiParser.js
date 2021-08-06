@@ -17,13 +17,13 @@ export class sbiParser {
     static #armorRegex = /^(armor class) (?<ac>\d+)/i;
     static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( \+ \d+)?)\)/i;
     static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
-    static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
+    static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/gi;
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|-|−]\d+)\)/g;
     static #abilitySavesRegex = /(?<name>\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b) (?<modifier>[\+|-]\d+)/ig;
     static #skillsRegex = /(?<name>\bacrobatics\b|\barcana\b|\banimal handling\b|\bathletics\b|\bdeception\b|\bhistory\b|\binsight\b|\bintimidation\b|\binvestigation\b|\bmedicine\b|\bnature\b|\bperception\b|\bperformance\b|\bpersuasion\b|\breligion\b|\bsleight of hand\b|\bstealth\b|\bsurvival\b) (?<modifier>[\+|-]\d+)/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
     static #challengeRegex = /^challenge (?<cr>[\d/]+) \((?<xp>[\d,]+)/i;
-    static #spellCastingRegex = /innately cast (?<spell>[\w\s]+)|\((?<perday>\d+)\/day\)|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
+    static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
     static #attackRegex = /(attack|damage): \+(?<tohit>\d+) to hit/i;
     static #reachRegex = /reach (?<reach>\d+) ft/i;
     static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ft/i;
@@ -62,17 +62,17 @@ export class sbiParser {
             const sections = {};
             let header = null;
 
-            lines.forEach(line => {
+            for (const line of lines) {
                 const trimmedLine = line.trim();
 
                 if (sectionHeaders.includes(trimmedLine.toLowerCase())) {
                     header = trimmedLine;
                     sections[header] = [];
                 }
-                else {
+                else if (sections[header]) {
                     sections[header].push(trimmedLine);
                 }
-            });
+            }
 
             const actorName = storedLines.shift();
 
@@ -80,51 +80,6 @@ export class sbiParser {
                 name: actorName,
                 type: "npc"
             })
-
-            // Add the sections to the character actor.
-            Object.entries(sections).forEach(async ([key, value]) => {
-                const sectionHeader = key;
-
-                // Actions and Reactions are a special case, so handle them separately.
-                if (sectionHeader.toLowerCase() === "actions" || sectionHeader.toLowerCase() === "reactions") {
-                    if (sectionHeader.toLowerCase() === "actions") {
-                        await this.SetActionsAsync(value, actor);
-                    }
-                    else {
-                        await this.SetReactionsAsync(value, actor);
-                    }
-                }
-                else {
-                    const actionDescriptions = this.GetActionDescriptions(value);
-
-                    for (const actionDescription of actionDescriptions) {
-                        const itemData = {};
-                        itemData.name = sbiUtils.capitalize(actionDescription.name);
-                        itemData.type = "feat";
-
-                        sbiUtils.assignToObject(itemData, "data.description.value", actionDescription.description);
-
-                        // Add these just so that it doesn't say the action is not equipped and not proficient in the UI.
-                        sbiUtils.assignToObject(itemData, "data.equipped", true);
-                        sbiUtils.assignToObject(itemData, "data.proficient", true);
-
-                        // Determine whether this is a legendary or lair action.
-                        let itemType = null;
-
-                        if (sectionHeader.toLowerCase() === "lair actions") {
-                            itemType = "lair";
-                        }
-                        else if (sectionHeader.toLowerCase() === "legendary actions") {
-                            itemType = "legendary";
-                        }
-
-                        sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", itemType);
-
-                        const item = new Item(itemData);
-                        await actor.createEmbeddedDocuments("Item", [item.toObject()]);
-                    }
-                }
-            });
 
             await this.SetRacialFeaturesAsync(storedLines, actor);
             await this.SetArmorAsync(storedLines, actor);
@@ -142,6 +97,23 @@ export class sbiParser {
             await this.SetLanguagesAsync(storedLines, actor);
             await this.SetChallengeAsync(storedLines, actor);
             await this.SetFeaturesAsync(storedLines, actor);
+
+            // Add the sections to the character actor.
+            Object.entries(sections).forEach(async ([key, value]) => {
+                const sectionHeader = sbiUtils.capitalize(key);
+
+                if (sectionHeader.toLowerCase() === "actions") {
+                    await this.SetActionsAsync(value, actor);
+                }
+                else if (sectionHeader.toLowerCase() === "reactions") {
+                    await this.SetReactionsAsync(value, actor);
+                }
+                else {
+                    // Anything that isn't an action or reaction is a "major" action,
+                    // which are legendary actions and lair actions
+                    await this.SetMajorAction(sectionHeader, value, actor);
+                }
+            });
         }
     }
 
@@ -156,25 +128,22 @@ export class sbiParser {
             itemData.name = sbiUtils.capitalize(name);
             itemData.type = "feat";
 
-            sbiUtils.assignToObject(itemData, "data.identified", true);
-            sbiUtils.assignToObject(itemData, "data.equipped", true);
-            sbiUtils.assignToObject(itemData, "data.proficient", true);
-            sbiUtils.assignToObject(itemData, "data.quantity", 1);
             sbiUtils.assignToObject(itemData, "data.description.value", description);
-            sbiUtils.assignToObject(itemData, "data.activation.type", "action");
-            sbiUtils.assignToObject(itemData, "data.activation.cost", 1);
 
             // The "Multiattack" action isn't a real action, so there's nothing more to add to it.
             if (name.toLowerCase() !== "multiattack") {
-
-                // TODO: this needs to be set after we've parsed the abilities.
-                sbiUtils.assignToObject(itemData, "data.ability", actor.data.data.abilities.str.mod > actor.data.data.abilities.dex.mod ? "str" : "dex");
+                sbiUtils.assignToObject(itemData, "data.identified", true);
+                sbiUtils.assignToObject(itemData, "data.equipped", true);
+                sbiUtils.assignToObject(itemData, "data.proficient", true);
+                sbiUtils.assignToObject(itemData, "data.quantity", 1);
+                sbiUtils.assignToObject(itemData, "data.activation.type", "action");
+                sbiUtils.assignToObject(itemData, "data.activation.cost", 1);
 
                 if (name.toLowerCase() === "illumination") {
                     this.SetIllumination(description, item);
                 }
                 else {
-                    this.SetAttack(description, itemData);
+                    this.SetAttack(description, itemData, actor);
                     this.SetSavingThrow(description, itemData);
                     this.SetRecharge(name, itemData);
                     this.SetTarget(description, itemData);
@@ -386,27 +355,30 @@ export class sbiParser {
         const foundAbilityValues = [] //new List<Match>();
         const foundLines = [];
 
-        for (const l of lines) {
-            const line = l.trim();
+        for (const line of lines) {
+            const trimmedLine = line.trim();
 
             // Names come before values, so if we've found all the values then we've found all the names.
             if (foundAbilityValues.length == 6) {
                 break;
             }
 
-            if (this.#abilityNamesRegex.test(line)) {
-                // TODO: Figure out why using the regex variable doesn't work, but using the same raw regex here does.
-                var abilityMatches = [...line.matchAll(/\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig)];
+            // Look for ability identifiers, like STR, DEX, etc.
+            var abilityMatches = [...trimmedLine.matchAll(this.#abilityNamesRegex)];
+
+            if (abilityMatches.length) {
                 for (const match of abilityMatches) {
                     foundAbilityNames.push(match[0]);
                 }
-                foundLines.push(l);
+
+                foundLines.push(line);
             }
             else {
-                const valueMatches = [...line.matchAll(this.#abilityValuesRegex)];
+                // Look for ability values, like 18 (+4).
+                const valueMatches = [...trimmedLine.matchAll(this.#abilityValuesRegex)];
 
                 if (valueMatches.length) {
-                    foundLines.push(l);
+                    foundLines.push(line);
 
                     const values = valueMatches.map(m => m.groups.base);
                     foundAbilityValues.push.apply(foundAbilityValues, values);
@@ -658,7 +630,26 @@ export class sbiParser {
             sbiUtils.assignToObject(itemData, "data.activation.type", "none");
 
             if (name.toLowerCase() === "innate spellcasting") {
-                await this.SetInnateSpellsAsync(description, itemData, actor);
+                // Example:
+                // Innate Spellcasting. The aridni's innate spellcasting ability is Charisma (spell save DC 14). 
+                // It can innately cast the following spells: 
+                // At will: dancing lights, detect magic, invisibility 
+                // 3/day: charm person, faerie fire, mage armor 
+                // 1/day: spike growth
+                await this.SetSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
+            }
+            else if (name.toLowerCase() === "spellcasting") {
+                // Example:
+                // Spellcasting. The sphinx is a 9th-­‐level spellcaster. Its spellcasting ability is Intelligence (spell save DC 16, +8
+                // to hit with spell attacks). It requires no material components to cast its spells. The sphinx has the
+                // following wizard spells prepared:
+                // Cantrips (at will): mage hand, minor illusion, prestidigitation
+                // 1st level (4 slots): detect magic, identify, shield
+                // 2nd level (3 slots): darkness, locate object, suggestion
+                // 3rd level (3 slots): dispel magic, remove curse, tongues
+                // 4th level (3 slots): banishment, greater invisibility
+                // 5th level (1 slot): legend lore
+                await this.SetSpellcastingAsync(description, itemData, actor, /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig);
             }
 
             const item = new Item(itemData);
@@ -666,28 +657,76 @@ export class sbiParser {
         }
     }
 
+    static async SetMajorAction(actionName, lines, actor) {
+        const actionDescriptions = this.GetActionDescriptions(lines);
+
+        // Construct one action block.
+        const itemData = {};
+        for (let index = 0; index < actionDescriptions.length; index++) {
+            const actionDescription = actionDescriptions[index];
+
+            if (index == 0) {
+                itemData.name = actionName;
+                itemData.type = "feat";
+
+                sbiUtils.assignToObject(itemData, "data.description.value", `<p>${actionDescription.description}</p>`);
+
+                // Add these just so that it doesn't say the action is not equipped and not proficient in the UI.
+                sbiUtils.assignToObject(itemData, "data.equipped", true);
+                sbiUtils.assignToObject(itemData, "data.proficient", true);
+
+                // Determine whether this is a legendary or lair action.
+                let itemType = null;
+
+                if (actionName.toLowerCase() === "lair actions") {
+                    itemType = "lair";
+
+                    // What iniative count does the lair action activate?
+                    const lairInitiativeRegex = /initiative count (?<count>\d+)/i;
+                    const lairInitiativeMatch = lairInitiativeRegex.exec(actionDescription.description);
+
+                    await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.value", true));
+                    await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
+                }
+                else if (actionName.toLowerCase() === "legendary actions") {
+                    itemType = "legendary";
+
+                    // How many legendary actions can it take?
+                    const legendaryActionCountRegex = /take (?<count>\d+) legendary/i;
+                    const legendaryActionMatch = legendaryActionCountRegex.exec(actionDescription.description);
+
+                    if (legendaryActionMatch) {
+                        await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.value", parseInt(legendaryActionMatch.groups.count)));
+                        await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.max", parseInt(legendaryActionMatch.groups.count)));
+                    }
+                }
+
+                sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", itemType);
+            } else {
+                itemData.data.description.value = `${itemData.data.description.value}\n<p><b>${actionDescription.name}</b>\n${actionDescription.description}</p>`;
+            }
+        }
+
+        const item = new Item(itemData);
+        await actor.createEmbeddedDocuments("Item", [item.toObject()]);
+    }
+
     // Example: Melee Weapon Attack: +8 to hit, reach 5 ft.,one target.
-    static SetAttack(text, itemData) {
+    static SetAttack(text, itemData, actor) {
         const match = this.#attackRegex.exec(text);
 
         if (match !== null) {
             itemData.type = "weapon";
             sbiUtils.assignToObject(itemData, "data.weaponType", "natural");
+            sbiUtils.assignToObject(itemData, "data.ability", actor.data.data.abilities.str.mod > actor.data.data.abilities.dex.mod ? "str" : "dex");
 
             this.SetDamageRolls(text, itemData, "hit:");
         }
     }
 
-    // Example:
-    // Innate Spellcasting. The aridni's innate spellcasting ability is Charisma (spell save DC 14). 
-    // It can innately cast the following spells: 
-    // At will: dancing lights, detect magic, invisibility 
-    // 3/day: charm person, faerie fire, mage armor 
-    // 1/day: spike growth
-    static async SetInnateSpellsAsync(description, itemData, actor) {
-        const spellRegex = /at will:|\d\/day( each)?:/ig;
+    static async SetSpellcastingAsync(description, itemData, actor, spellRegex) {
         const spellMatches = [...description.matchAll(spellRegex)];
-        let allSpellNames = [];
+        let spellDatas = [];
 
         // Put spell groups on their own lines in the description so that it reads better.
         if (spellMatches.length) {
@@ -706,40 +745,56 @@ export class sbiParser {
                 featureDescription.push(`<p><b>${match[0]}</b> ${spellNames.join(", ")}</p>`);
                 lastIndex = match.index;
 
-                // Remove text in parenthesis when storing the spell name for lookup later.
-                allSpellNames = allSpellNames.concat(spellNames.map(spell => spell.replace(/\(.*\)/, "")));
+                const slots = this.GetGroupValue("slots", [...match[0].matchAll(this.#spellCastingRegex)]);
+                const perday = this.GetGroupValue("perday", [...match[0].matchAll(this.#spellCastingRegex)]);
+                let spellCount;
+
+                if (slots) {
+                    spellCount = parseInt(slots);
+                } else if (perday) {
+                    spellCount = parseInt(perday);
+                }
+
+                for (const spellName of spellNames) {
+                    spellDatas.push({
+                        // Remove text in parenthesis when storing the spell name for lookup later.
+                        "name": spellName.replace(/\(.*\)/, ""),
+                        "count": spellCount
+                    });
+                }
             }
 
-            sbiUtils.assignToObject(itemData, "data.description.value", featureDescription.reverse().join("\n"));
+            const introDescription = `<p>${description.slice(0, spellMatches[0].index)}</p>`;
+            const fullDescription = introDescription.concat(featureDescription.reverse().join("\n"));
+            sbiUtils.assignToObject(itemData, "data.description.value", fullDescription);
         }
 
         // Set the spellcasting ability.
-        const matches = [...description.matchAll(this.#spellCastingRegex)];
+        const spellcastingAbility = this.GetGroupValue("ability", [...description.matchAll(this.#spellCastingRegex)]);
 
-        if (matches.length) {
-            const spell = this.GetGroupValue("spell", matches);
-
-            if (spell) {
-                const spellcastingAbility = this.GetGroupValue("ability", matches);
-
-                if (spellcastingAbility != null) {
-                    const actorData = sbiUtils.assignToObject({}, "data.attributes.spellcasting", this.ConvertToShortAbility(spellcastingAbility));
-                    await actor.update(actorData)
-                }
-            }
+        if (spellcastingAbility != null) {
+            const actorData = sbiUtils.assignToObject({}, "data.attributes.spellcasting", this.ConvertToShortAbility(spellcastingAbility));
+            await actor.update(actorData)
         }
 
         // Add spells to actor.
-        if (allSpellNames.length) {
+        if (spellDatas.length) {
             const pack = game.packs.get("dnd5e.spells");
 
             if (pack) {
-                for (const spellName of allSpellNames) {
-                    var spell = pack.index.find(e => spellName.toLowerCase() === e.name.toLowerCase());
+                for (const spellData of spellDatas) {
+                    var spell = pack.index.find(e => spellData.name.toLowerCase() === e.name.toLowerCase());
 
                     if (spell) {
                         var spellDoc = await pack.getDocument(spell._id);
                         await actor.createEmbeddedDocuments("Item", [spellDoc.data.toObject()]);
+
+                        const spellObject = {};
+                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spellDoc.data.data.level}.value`, spellData.count);
+                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spellDoc.data.data.level}.max`, spellData.count);
+                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spellDoc.data.data.level}.override`, spellData.count);
+
+                        await actor.update(spellObject);
                     }
                 }
             }
@@ -902,12 +957,27 @@ export class sbiParser {
             foundSentenceEnd = line.trimEnd().endsWith(".")
         }
 
+        for (const actionDescription of result) {
+            actionDescription.description = this.FormatForDisplay(actionDescription.description);
+        }
+
         return result;
     }
 
     // ===============================
     // Utilities
     // ===============================
+
+    static FormatForDisplay(text) {
+        const textArr = text.replaceAll("•", "\n•").split("\n");
+
+        if (textArr.length > 1) {
+            return `<p>${textArr.join("</p><p>")}</p>`
+        }
+        else {
+            return textArr.join("");
+        }
+    }
 
     static SetArrayValues(lines, startText, setValueFunc) {
         const line = lines.find(line => line.toLowerCase().startsWith(startText));
@@ -991,7 +1061,11 @@ export class sbiParser {
     }
 
     static GetGroupValue(group, matches) {
-        return matches.map(m => m.groups[group]).find(val => val);
+        if (matches && matches.length) {
+            return matches.map(m => m.groups[group]).find(val => val);
+        }
+
+        return null;
     }
 
     static ConvertToShortAbility(abilityName) {
