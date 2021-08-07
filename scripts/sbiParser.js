@@ -11,7 +11,8 @@ class ActionDescription {
 }
 
 export class sbiParser {
-    // First word has to start with a capitol letter, followed by 0-3 other words, followed by a period. Support words with hyphens, non-capitol first letter, and parentesis like '(Recharge 5-6)'.
+    // For action titles, the first word has to start with a capitol letter, followed by 0-3 other words,
+    // followed by a period. Support words with hyphens, non-capitol first letter, and parentheses like '(Recharge 5-6)'.
     static #actionTitleRegex = /^(([A-Z]\w+[ \-]?)(\w+ ?){0,3}(\([\w –\-\/]+\))?)\./;
     static #sizeRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b) (?<type>\w+)[,|\s]+(\((?<race>\w+)\))?[,|\s]+(?<alignment>\w+)/i;
     static #armorRegex = /^(armor class) (?<ac>\d+)/i;
@@ -76,10 +77,10 @@ export class sbiParser {
 
             const actorName = storedLines.shift();
 
-            let actor = await Actor.create({
+            const actor = await Actor.create({
                 name: actorName,
                 type: "npc"
-            })
+            });
 
             await this.SetRacialFeaturesAsync(storedLines, actor);
             await this.SetArmorAsync(storedLines, actor);
@@ -114,6 +115,8 @@ export class sbiParser {
                     await this.SetMajorAction(sectionHeader, value, actor);
                 }
             });
+
+            actor.render(true);
         }
     }
 
@@ -758,7 +761,7 @@ export class sbiParser {
                 for (const spellName of spellNames) {
                     spellDatas.push({
                         // Remove text in parenthesis when storing the spell name for lookup later.
-                        "name": spellName.replace(/\(.*\)/, ""),
+                        "name": spellName.replace(/\(.*\)/, "").trim(),
                         "count": spellCount
                     });
                 }
@@ -919,11 +922,12 @@ export class sbiParser {
         const result = [];
         let actionDescription = null;
         let foundSentenceEnd = true;
+        let foundSpellBlock = true;
 
         for (const line of lines) {
             const match = this.#actionTitleRegex.exec(line);
 
-            if (match && foundSentenceEnd) {
+            if (match && (foundSentenceEnd || (foundSpellBlock && foundSentenceEnd))) {
                 actionDescription = new ActionDescription(
                     match[match.index].replace(".", ""),
                     line.slice(match[match.index].length).trim());
@@ -944,17 +948,14 @@ export class sbiParser {
                 }
             }
 
-            // TODO: add special handling for spell blocks because the spell lines don't end with a period.
-            // Example:
-            // Innate Spellcasting. The glabrezu’s spellcasting ability
-            // is Intelligence (spell save DC 16). The glabrezu can
-            // innately cast the following spells, requiring no material
-            // components:
-            // At will: darkness, detect magic, dispel magic
-            // 1/day each: confusion, fly, power word stun
-            // Magic Resistance. The glabrezu has advantage on
-            // saving throws against spells and other magical effects.
+            // We want to track the current line before going on to the next so that we can tell if a 
+            // match on the next action title is valid. We know it's a new block if the previous sentence 
+            // ends with a period, meaning we didn't accidentally find text that looks like a title in 
+            // the middle of a block, or if the new title is coming after an Innate Spellcasting or 
+            // Spellcasting block. We need to test for the spellcasting blocks specially because they 
+            // don't use periods at the ends of their spell lists.
             foundSentenceEnd = line.trimEnd().endsWith(".")
+            foundSpellBlock = actionDescription.name.match(/\binnate spellcasting\b|\bspellcasting\b/i)
         }
 
         for (const actionDescription of result) {
