@@ -116,7 +116,8 @@ export class sbiParser {
                 }
             });
 
-            actor.render(true);
+            // Open the sheet.
+            actor.sheet.render(true);
         }
     }
 
