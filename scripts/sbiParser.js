@@ -926,8 +926,9 @@ export class sbiParser {
 
         for (const line of lines) {
             const match = this.#actionTitleRegex.exec(line);
+            const foundSpellSaveLine = line.toLowerCase().includes("(spell save");
 
-            if (match && (foundSentenceEnd || (foundSpellBlock && foundSentenceEnd))) {
+            if (match && (foundSentenceEnd || (foundSpellBlock && !foundSpellSaveLine))) {
                 actionDescription = new ActionDescription(
                     match[match.index].replace(".", ""),
                     line.slice(match[match.index].length).trim());
@@ -955,7 +956,7 @@ export class sbiParser {
             // Spellcasting block. We need to test for the spellcasting blocks specially because they 
             // don't use periods at the ends of their spell lists.
             foundSentenceEnd = line.trimEnd().endsWith(".")
-            foundSpellBlock = actionDescription.name.match(/\binnate spellcasting\b|\bspellcasting\b/i)
+            foundSpellBlock = actionDescription.name.match(/\binnate spellcasting\b|\bspellcasting\b/i) != null;
         }
 
         for (const actionDescription of result) {
