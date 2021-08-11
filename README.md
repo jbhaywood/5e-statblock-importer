@@ -70,5 +70,5 @@ If you find a statblock that doesn't import correctly, open an issue [here](http
 This module was based on the [Pathfinder 1e Statblock Library](https://github.com/baileymh/statblock-library) module because I hadn't made a module before and needed a place to start.
 
 ## License
-This work is licensed under Foundry Virtual Tabletop [EULA - Limited License Agreement for module development v 0.1.6](http://foundryvtt.com/pages/license.html).
+This work is licensed under Foundry Virtual Tabletop [EULA - Limited License Agreement for module development v 0.1.6](http://foundryvtt.com/pages/license.html).  
 This Foundry VTT module, writen by James Haywood, is licensed under the [MIT License](https://github.com/jbhaywood/5e-statblock-importer/blob/main/LICENSE).
