@@ -1,6 +1,6 @@
 import { sbiUtils } from "./sbiUtils.js";
 import { sbiParser } from "./sbiParser.js";
-import { sbiConfig } from "./sbiDevConfig.js";
+import { sbiConfig } from "./sbiConfig.js";
 
 export class sbiWindow extends Application {
 
@@ -41,7 +41,7 @@ export class sbiWindow extends Application {
 
             const lines = $("#sbi-input").val().trim().split(/\n/g);
 
-            if (sbiConfig?.options.debug) {
+            if (sbiConfig.options.debug) {
                 await sbiParser.parseInput(lines);
             } else {
                 try {
@@ -55,7 +55,7 @@ export class sbiWindow extends Application {
         // ###############################
         // DEBUG
         // ###############################
-        if (sbiConfig?.options.debug) {
+        if (sbiConfig.options.debug) {
             const linesToAdd = [
                 "Djinni",
                 "Large elemental, chaotic good",

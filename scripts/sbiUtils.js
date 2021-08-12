@@ -1,9 +1,9 @@
-import { sbiConfig } from "./sbiDevConfig.js";
+import { sbiConfig } from "./sbiConfig.js";
 
 export class sbiUtils {
 
     static log(message) {
-        if (sbiConfig?.options.debug) {
+        if (sbiConfig.options.debug) {
             console.log("sbi | " + message);
         }
     }
