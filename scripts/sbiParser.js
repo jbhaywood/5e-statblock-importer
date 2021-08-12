@@ -1047,7 +1047,7 @@ export class sbiParser {
     }
 
     static ConvertLanguage(language) {
-        const result = language.trim().toLowerCase();
+        let result = language.trim().toLowerCase();
 
         switch (result) {
             case "deep speech":

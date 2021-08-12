@@ -1,6 +1,6 @@
 import { sbiUtils } from "./sbiUtils.js";
 import { sbiParser } from "./sbiParser.js";
-import { sbiConfig } from "./sbiConfig.js";
+import { sbiConfig } from "./sbiDevConfig.js";
 
 export class sbiWindow extends Application {
 
@@ -40,17 +40,22 @@ export class sbiWindow extends Application {
             // TODO: let user define the folder that the actor goes into
 
             const lines = $("#sbi-input").val().trim().split(/\n/g);
-            try {
+
+            if (sbiConfig?.options.debug) {
                 await sbiParser.parseInput(lines);
-            } catch (error) {
-                ui.notifications.error("5E STATBLOCK IMPORTER: An error has occured. Please report it using the module link so it can get fixed.")
+            } else {
+                try {
+                    await sbiParser.parseInput(lines);
+                } catch (error) {
+                    ui.notifications.error("5E STATBLOCK IMPORTER: An error has occured. Please report it using the module link so it can get fixed.")
+                }
             }
         });
 
         // ###############################
         // DEBUG
         // ###############################
-        if (sbiConfig.options.debug) {
+        if (sbiConfig?.options.debug) {
             const linesToAdd = [
                 "Djinni",
                 "Large elemental, chaotic good",
