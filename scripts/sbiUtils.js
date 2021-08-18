@@ -38,6 +38,22 @@ export class sbiUtils {
         return obj;
     }
 
+    static async getFromPackAsync(packName, itemName) {
+        let result = null;
+        const pack = game.packs.get(packName);
+
+        if (pack) {
+            const item = pack.index.find(e => itemName.toLowerCase() === e.name.toLowerCase());
+
+            if (item) {
+                const itemDoc = await pack.getDocument(item._id);
+                result = itemDoc.toObject();
+            }
+        }
+
+        return result;
+    }
+
     // ==========================
     // String Functions    
     // ==========================

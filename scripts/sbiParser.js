@@ -14,8 +14,8 @@ export class sbiParser {
     // For action titles, the first word has to start with a capitol letter, followed by 0-3 other words,
     // followed by a period. Support words with hyphens, non-capitol first letter, and parentheses like '(Recharge 5-6)'.
     static #actionTitleRegex = /^(([A-Z]\w+[ \-]?)(\w+ ?){0,3}(\([\w –\-\/]+\))?)\./;
-    static #sizeRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b) (?<type>\w+)[,|\s]+(\((?<race>\w+)\))?[,|\s]+(?<alignment>\w+)/i;
-    static #armorRegex = /^(armor class) (?<ac>\d+)/i;
+    static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b) (?<type>\w+)[,|\s]+(\((?<race>[\w|\s]+)\))?[,|\s]+(?<alignment>[\w|\s]+)/i;
+    static #armorRegex = /^(armor class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( \+ \d+)?)\)/i;
     static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
     static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/gi;
@@ -78,11 +78,11 @@ export class sbiParser {
             const actorName = storedLines.shift();
 
             const actor = await Actor.create({
-                name: actorName,
+                name: sbiUtils.capitalize(actorName),
                 type: "npc"
             });
 
-            await this.SetRacialFeaturesAsync(storedLines, actor);
+            await this.SetRacialDetailsAsync(storedLines, actor);
             await this.SetArmorAsync(storedLines, actor);
             await this.SetHealthAsync(storedLines, actor);
             await this.SetSpeedAsync(storedLines, actor);
@@ -182,52 +182,44 @@ export class sbiParser {
         }
     }
 
-    static async SetRacialFeaturesAsync(lines, actor) {
+    static async SetRacialDetailsAsync(lines, actor) {
         // First word in the line should be one of the size indicators.
         const matchObj = lines
             .map(line => {
                 return {
                     "line": line,
-                    "match": this.#sizeRegex.exec(line)
+                    "match": this.#racialDetailsRegex.exec(line)
                 }
             })
             .find(obj => obj.match);
 
         if (matchObj) {
             const sizeValue = matchObj.match.groups.size.toLowerCase();
-            let size = null
+            const detailsData = {};
 
             switch (sizeValue) {
                 case "small":
-                    size = "sm";
+                    sbiUtils.assignToObject(detailsData, "data.traits.size", "sm");
                     break;
                 case "medium":
-                    size = "med";
+                    sbiUtils.assignToObject(detailsData, "data.traits.size", "med");
                     break;
                 case "large":
-                    size = "lg";
+                    sbiUtils.assignToObject(detailsData, "data.traits.size", "lg");
                     break;
                 case "gargantuan":
-                    size = "grg";
+                    sbiUtils.assignToObject(detailsData, "data.traits.size", "grg");
                     break;
                 default:
-                    size = sizeValue;
+                    sbiUtils.assignToObject(detailsData, "data.traits.size", sizeValue);
                     break;
             }
 
-            await actor.update({
-                "data": {
-                    "traits": {
-                        "size": size
-                    },
-                    "details": {
-                        "alignment": sbiUtils.capitalize(matchObj.match.groups.alignment?.trim()),
-                        "race": sbiUtils.capitalize(matchObj.match.groups.race?.trim()),
-                        "type": sbiUtils.capitalize(matchObj.match.groups.type?.trim())
-                    }
-                }
-            })
+            sbiUtils.assignToObject(detailsData, "data.details.alignment", sbiUtils.capitalize(matchObj.match.groups.alignment?.trim()));
+            sbiUtils.assignToObject(detailsData, "data.details.race", sbiUtils.capitalize(matchObj.match.groups.race?.trim()));
+            sbiUtils.assignToObject(detailsData, "data.details.type", sbiUtils.capitalize(matchObj.match.groups.type?.trim()));
 
+            await actor.update(detailsData);
             sbiUtils.remove(lines, matchObj.line);
         }
     }
@@ -243,16 +235,39 @@ export class sbiParser {
             .find(obj => obj.match);
 
         if (matchObj) {
-            await actor.update({
-                "data": {
-                    "attributes": {
-                        "ac": {
-                            "value": parseInt(matchObj.match.groups.ac)
+            const armorData = {};
+            const armorValue = parseInt(matchObj.match.groups.ac);
+            const armorType = matchObj.match.groups.armortype;
+            let foundArmorItems = false;
+
+            if (armorType) {
+                if (armorType.toLowerCase() === "natural armor") {
+                    sbiUtils.assignToObject(armorData, "data.attributes.ac.calc", "natural");
+                    sbiUtils.assignToObject(armorData, "data.attributes.ac.flat", armorValue);
+                } else {
+                    const armorNames = armorType.split(",").map(str => str.trim());
+
+                    for (const armorName of armorNames) {
+                        const item = await sbiUtils.getFromPackAsync("dnd5e.items", armorName);
+
+                        if (item) {
+                            item.data.equipped = true;
+                            item.data.proficient = true;
+
+                            await actor.createEmbeddedDocuments("Item", [item]);
+
+                            foundArmorItems = true;
                         }
                     }
                 }
-            })
+            }
 
+            if (!foundArmorItems) {
+                sbiUtils.assignToObject(armorData, "data.attributes.ac.calc", "flat");
+                sbiUtils.assignToObject(armorData, "data.attributes.ac.flat", armorValue);
+            }
+
+            await actor.update(armorData);
             sbiUtils.remove(lines, matchObj.line);
         }
     }
@@ -348,7 +363,7 @@ export class sbiParser {
         const line = lines.find(l => l.toLowerCase().startsWith("roll initiative"));
 
         if (line != null) {
-            const number = parseInt(sbiUtils.last(line.Split(' ')));
+            const number = parseInt(sbiUtils.last(line.split(' ')));
             await actor.update(sbiUtils.assignToObject(actorData, "data.attributes.init.bonus", number));
             sbiUtils.remove(lines, line);
         }
@@ -368,7 +383,7 @@ export class sbiParser {
             }
 
             // Look for ability identifiers, like STR, DEX, etc.
-            var abilityMatches = [...trimmedLine.matchAll(this.#abilityNamesRegex)];
+            const abilityMatches = [...trimmedLine.matchAll(this.#abilityNamesRegex)];
 
             if (abilityMatches.length) {
                 for (const match of abilityMatches) {
@@ -655,6 +670,17 @@ export class sbiParser {
                 // 5th level (1 slot): legend lore
                 await this.SetSpellcastingAsync(description, itemData, actor, /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig);
             }
+            else if (name.toLowerCase().startsWith("legendary resistance")) {
+                // Example:
+                // Legendary Resistance (3/day)
+                const resistanceCountRegex = /(?<perday>\d+)\/day/i;
+                const resistanceMatch = resistanceCountRegex.exec(name);
+
+                if (resistanceMatch) {
+                    await actor.update(sbiUtils.assignToObject({}, "data.resources.legres.value", parseInt(resistanceMatch.groups.perday)));
+                    await actor.update(sbiUtils.assignToObject({}, "data.resources.legres.max", parseInt(resistanceMatch.groups.perday)));
+                }
+            }
 
             const item = new Item(itemData);
             await actor.createEmbeddedDocuments("Item", [item.toObject()]);
@@ -783,23 +809,22 @@ export class sbiParser {
 
         // Add spells to actor.
         if (spellDatas.length) {
-            const pack = game.packs.get("dnd5e.spells");
+            for (const spellData of spellDatas) {
+                const spell = await sbiUtils.getFromPackAsync("dnd5e.spells", spellData.name);
 
-            if (pack) {
-                for (const spellData of spellDatas) {
-                    var spell = pack.index.find(e => spellData.name.toLowerCase() === e.name.toLowerCase());
+                if (spell) {
+                    // Add the spell to the character sheet.
+                    await actor.createEmbeddedDocuments("Item", [spell]);
 
-                    if (spell) {
-                        var spellDoc = await pack.getDocument(spell._id);
-                        await actor.createEmbeddedDocuments("Item", [spellDoc.data.toObject()]);
+                    // Update the actor's number of slots per level. For monsters this isn't totally 
+                    // accurate because different spells of the same level can have a different number 
+                    // of uses per day. But nothing we can do about that.
+                    const spellObject = {};
+                    sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellData.count);
+                    sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellData.count);
+                    sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellData.count);
 
-                        const spellObject = {};
-                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spellDoc.data.data.level}.value`, spellData.count);
-                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spellDoc.data.data.level}.max`, spellData.count);
-                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spellDoc.data.data.level}.override`, spellData.count);
-
-                        await actor.update(spellObject);
-                    }
+                    await actor.update(spellObject);
                 }
             }
         }
@@ -914,7 +939,10 @@ export class sbiParser {
 
         if (versatilematch !== null) {
             itemData.data.damage.versatile = versatilematch.groups.damageroll;
-            itemData.data.properties.ver = true;
+
+            if (itemData.data.properties) {
+                itemData.data.properties.ver = true;
+            }
         }
     }
 
