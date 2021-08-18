@@ -50,13 +50,15 @@ export class sbiParser {
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
 
-                if (!sectionHeaders.includes(line.toLowerCase())) {
-                    storedLines.push(line);
-                }
-                else {
-                    lines.splice(0, i);
-                    break;
-                }
+                if (line.length) {
+                    if (!sectionHeaders.includes(line.toLowerCase())) {
+                        storedLines.push(line);
+                    }
+                    else {
+                        lines.splice(0, i);
+                        break;
+                    }
+                    }
             }
 
             // Split out the sections into a dictionary.
@@ -97,6 +99,7 @@ export class sbiParser {
             await this.SetSensesAsync(storedLines, actor);
             await this.SetLanguagesAsync(storedLines, actor);
             await this.SetChallengeAsync(storedLines, actor);
+            this.SetProficiency(storedLines);
             await this.SetFeaturesAsync(storedLines, actor);
 
             // Add the sections to the character actor.
@@ -631,6 +634,16 @@ export class sbiParser {
 
             await actor.update(actorData);
             sbiUtils.remove(lines, foundMatch.line);
+        }
+    }
+
+    static SetProficiency(lines) {
+        const foundLine = lines
+            .find(line => line.toLowerCase().startsWith("proficiency bonus"));
+
+        if (foundLine != null) {
+            // Don't do anything because proficiency is automatically calculated in Foundry, but still remove the line.
+            sbiUtils.remove(lines, foundLine);
         }
     }
 
