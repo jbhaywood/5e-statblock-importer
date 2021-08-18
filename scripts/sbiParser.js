@@ -50,15 +50,17 @@ export class sbiParser {
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
 
-                if (line.length) {
-                    if (!sectionHeaders.includes(line.toLowerCase())) {
-                        storedLines.push(line);
-                    }
-                    else {
-                        lines.splice(0, i);
-                        break;
-                    }
-                    }
+                if (this.IsLineIgnored(line)) {
+                    continue;
+                }
+
+                if (!sectionHeaders.includes(line.toLowerCase())) {
+                    storedLines.push(line);
+                }
+                else {
+                    lines.splice(0, i);
+                    break;
+                }
             }
 
             // Split out the sections into a dictionary.
@@ -99,7 +101,6 @@ export class sbiParser {
             await this.SetSensesAsync(storedLines, actor);
             await this.SetLanguagesAsync(storedLines, actor);
             await this.SetChallengeAsync(storedLines, actor);
-            this.SetProficiency(storedLines);
             await this.SetFeaturesAsync(storedLines, actor);
 
             // Add the sections to the character actor.
@@ -247,6 +248,8 @@ export class sbiParser {
                 if (armorType.toLowerCase() === "natural armor") {
                     sbiUtils.assignToObject(armorData, "data.attributes.ac.calc", "natural");
                     sbiUtils.assignToObject(armorData, "data.attributes.ac.flat", armorValue);
+
+                    foundArmorItems = true;
                 } else {
                     const armorNames = armorType.split(",").map(str => str.trim());
 
@@ -637,16 +640,6 @@ export class sbiParser {
         }
     }
 
-    static SetProficiency(lines) {
-        const foundLine = lines
-            .find(line => line.toLowerCase().startsWith("proficiency bonus"));
-
-        if (foundLine != null) {
-            // Don't do anything because proficiency is automatically calculated in Foundry, but still remove the line.
-            sbiUtils.remove(lines, foundLine);
-        }
-    }
-
     static async SetFeaturesAsync(lines, actor) {
         const actionDescriptions = this.GetActionDescriptions(lines);
 
@@ -1011,6 +1004,15 @@ export class sbiParser {
     // ===============================
     // Utilities
     // ===============================
+
+    static IsLineIgnored(line) {
+        const ignoreList = [
+            "proficiency bonus",
+            "traits"
+        ]
+
+        return ignoreList.find(ignore => line.toLowerCase().startsWith(ignore)) != null;
+    }
 
     static FormatForDisplay(text) {
         const textArr = text.replaceAll("•", "\n•").split("\n");
