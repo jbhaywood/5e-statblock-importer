@@ -58,6 +58,7 @@ export class sbiUtils {
     // String Functions    
     // ==========================
 
+    // capitalize("passive perception") => "Passive Perception"
     static capitalize(string) {
         if (!string) {
             return null;
@@ -75,6 +76,7 @@ export class sbiUtils {
         });
     };
 
+    // startsWithCapital("Foo") => true
     static startsWithCapital(string) {
         return /[A-Z]/.test(string.charAt(0))
     }

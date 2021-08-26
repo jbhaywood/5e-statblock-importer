@@ -19,7 +19,7 @@ export class sbiParser {
     static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( \+ \d+)?)\)/i;
     static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
     static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/gi;
-    static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|\-|−]\d+)\)/g;
+    static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|\-|−|–]\d+)\)/g;
     static #abilitySavesRegex = /(?<name>\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b) (?<modifier>[\+|-]\d+)/ig;
     static #skillsRegex = /(?<name>\bacrobatics\b|\barcana\b|\banimal handling\b|\bathletics\b|\bdeception\b|\bhistory\b|\binsight\b|\bintimidation\b|\binvestigation\b|\bmedicine\b|\bnature\b|\bperception\b|\bperformance\b|\bpersuasion\b|\breligion\b|\bsleight of hand\b|\bstealth\b|\bsurvival\b) (?<modifier>[\+|-]\d+)/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
@@ -50,7 +50,7 @@ export class sbiParser {
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
 
-                if (this.IsLineIgnored(line)) {
+                if (this.isLineIgnored(line)) {
                     continue;
                 }
 
@@ -86,37 +86,37 @@ export class sbiParser {
                 type: "npc"
             });
 
-            await this.SetRacialDetailsAsync(storedLines, actor);
-            await this.SetArmorAsync(storedLines, actor);
-            await this.SetHealthAsync(storedLines, actor);
-            await this.SetSpeedAsync(storedLines, actor);
-            await this.SetInitiativeAsync(storedLines, actor);
-            await this.SetAbilitiesAsync(storedLines, actor);
-            await this.SetSavingThrowsAsync(storedLines, actor);
-            await this.SetSkillsAsync(storedLines, actor);
-            await this.SetDamagesAsync(storedLines, actor, "resistances");
-            await this.SetDamagesAsync(storedLines, actor, "immunities");
-            this.SetConditionImmunities(storedLines, actor);
-            this.SetDamageVulnerabilities(storedLines, actor);
-            await this.SetSensesAsync(storedLines, actor);
-            await this.SetLanguagesAsync(storedLines, actor);
-            await this.SetChallengeAsync(storedLines, actor);
-            await this.SetFeaturesAsync(storedLines, actor);
+            await this.setRacialDetailsAsync(storedLines, actor);
+            await this.setArmorAsync(storedLines, actor);
+            await this.setHealthAsync(storedLines, actor);
+            await this.setSpeedAsync(storedLines, actor);
+            await this.setInitiativeAsync(storedLines, actor);
+            await this.setAbilitiesAsync(storedLines, actor);
+            await this.setSavingThrowsAsync(storedLines, actor);
+            await this.setSkillsAsync(storedLines, actor);
+            await this.setDamagesAsync(storedLines, actor, "resistances");
+            await this.setDamagesAsync(storedLines, actor, "immunities");
+            this.setConditionImmunities(storedLines, actor);
+            this.setDamageVulnerabilities(storedLines, actor);
+            await this.setSensesAsync(storedLines, actor);
+            await this.setLanguagesAsync(storedLines, actor);
+            await this.setChallengeAsync(storedLines, actor);
+            await this.setFeaturesAsync(storedLines, actor);
 
             // Add the sections to the character actor.
             Object.entries(sections).forEach(async ([key, value]) => {
                 const sectionHeader = sbiUtils.capitalize(key);
 
                 if (sectionHeader.toLowerCase() === "actions") {
-                    await this.SetActionsAsync(value, actor);
+                    await this.setActionsAsync(value, actor);
                 }
                 else if (sectionHeader.toLowerCase() === "reactions") {
-                    await this.SetReactionsAsync(value, actor);
+                    await this.setReactionsAsync(value, actor);
                 }
                 else {
                     // Anything that isn't an action or reaction is a "major" action,
                     // which are legendary actions and lair actions
-                    await this.SetMajorAction(sectionHeader, value, actor);
+                    await this.setMajorAction(sectionHeader, value, actor);
                 }
             });
 
@@ -125,8 +125,8 @@ export class sbiParser {
         }
     }
 
-    static async SetActionsAsync(lines, actor) {
-        const actionDescriptions = this.GetActionDescriptions(lines);
+    static async setActionsAsync(lines, actor) {
+        const actionDescriptions = this.getActionDescriptions(lines);
 
         for (const actionDescription of actionDescriptions) {
             const name = actionDescription.name;
@@ -151,12 +151,12 @@ export class sbiParser {
                     this.SetIllumination(description, item);
                 }
                 else {
-                    this.SetAttack(description, itemData, actor);
-                    this.SetSavingThrow(description, itemData);
-                    this.SetRecharge(name, itemData);
-                    this.SetTarget(description, itemData);
-                    this.SetReach(description, itemData);
-                    this.SetRange(description, itemData);
+                    this.setAttack(description, itemData, actor);
+                    this.setSavingThrow(description, itemData);
+                    this.setRecharge(name, itemData);
+                    this.setTarget(description, itemData);
+                    this.setReach(description, itemData);
+                    this.setRange(description, itemData);
                 }
             }
 
@@ -165,8 +165,8 @@ export class sbiParser {
         };
     }
 
-    static async SetReactionsAsync(lines, actor) {
-        const actionDescriptions = this.GetActionDescriptions(lines);
+    static async setReactionsAsync(lines, actor) {
+        const actionDescriptions = this.getActionDescriptions(lines);
 
         for (const actionDescription of actionDescriptions) {
             const name = actionDescription.name;
@@ -186,7 +186,7 @@ export class sbiParser {
         }
     }
 
-    static async SetRacialDetailsAsync(lines, actor) {
+    static async setRacialDetailsAsync(lines, actor) {
         // First word in the line should be one of the size indicators.
         const matchObj = lines
             .map(line => {
@@ -228,7 +228,7 @@ export class sbiParser {
         }
     }
 
-    static async SetArmorAsync(lines, actor) {
+    static async setArmorAsync(lines, actor) {
         const matchObj = lines
             .map(line => {
                 return {
@@ -278,7 +278,7 @@ export class sbiParser {
         }
     }
 
-    static async SetHealthAsync(lines, actor) {
+    static async setHealthAsync(lines, actor) {
         const matchObj = lines
             .map(line => {
                 return {
@@ -307,7 +307,7 @@ export class sbiParser {
         }
     }
 
-    static async SetSpeedAsync(lines, actor) {
+    static async setSpeedAsync(lines, actor) {
         const speedLine = lines.find(line => line.toLowerCase().startsWith("speed"));
 
         if (speedLine != null) {
@@ -365,7 +365,7 @@ export class sbiParser {
         }
     }
 
-    static async SetInitiativeAsync(lines, actor) {
+    static async setInitiativeAsync(lines, actor) {
         const line = lines.find(l => l.toLowerCase().startsWith("roll initiative"));
 
         if (line != null) {
@@ -375,9 +375,9 @@ export class sbiParser {
         }
     }
 
-    static async SetAbilitiesAsync(lines, actor) {
+    static async setAbilitiesAsync(lines, actor) {
         const foundAbilityNames = [];
-        const foundAbilityValues = [] //new List<Match>();
+        const foundAbilityValues = []
         const foundLines = [];
 
         for (const line of lines) {
@@ -392,9 +392,8 @@ export class sbiParser {
             const abilityMatches = [...trimmedLine.matchAll(this.#abilityNamesRegex)];
 
             if (abilityMatches.length) {
-                for (const match of abilityMatches) {
-                    foundAbilityNames.push(match[0]);
-                }
+                const names = abilityMatches.map(m => m[0]);
+                foundAbilityNames.push.apply(foundAbilityNames, names);
 
                 foundLines.push(line);
             }
@@ -403,10 +402,10 @@ export class sbiParser {
                 const valueMatches = [...trimmedLine.matchAll(this.#abilityValuesRegex)];
 
                 if (valueMatches.length) {
-                    foundLines.push(line);
-
                     const values = valueMatches.map(m => m.groups.base);
                     foundAbilityValues.push.apply(foundAbilityValues, values);
+
+                    foundLines.push(line);
                 }
             }
         }
@@ -427,7 +426,7 @@ export class sbiParser {
         }
     }
 
-    static async SetSavingThrowsAsync(lines, actor) {
+    static async setSavingThrowsAsync(lines, actor) {
         const line = lines.find(line => line.toLowerCase().startsWith("saving throw"));
 
         if (line != null) {
@@ -445,17 +444,17 @@ export class sbiParser {
         }
     }
 
-    static async SetSkillsAsync(lines, actor) {
+    static async setSkillsAsync(lines, actor) {
         const startText = "skills";
         const line = lines.find(line => line.toLowerCase().startsWith(startText));
 
         if (line != null) {
-            const foundLine = this.CombineLines(lines, line).slice(startText.Length).toLowerCase();
+            const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
             const matches = [...foundLine.matchAll(this.#skillsRegex)];
             const actorData = {};
 
             for (const match of matches) {
-                const name = this.ConvertToShortSkill(match.groups.name);
+                const name = this.convertToShortSkill(match.groups.name);
                 const propPath = `data.skills.${name}.value`;
                 sbiUtils.assignToObject(actorData, propPath, 1);
             }
@@ -465,12 +464,12 @@ export class sbiParser {
         }
     }
 
-    static async SetDamagesAsync(lines, actor, type) {
+    static async setDamagesAsync(lines, actor, type) {
         const startText = `damage ${type} `;
         const line = lines.find(line => line.toLowerCase().startsWith(startText));
 
         if (line != null) {
-            const foundLine = this.CombineLines(lines, line).slice(startText.Length).toLowerCase();
+            const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
 
             const types = [
                 "bludgeoning",
@@ -516,20 +515,20 @@ export class sbiParser {
     }
 
     // Example: Condition Immunities paralyzed, poisoned, unconscious
-    static SetConditionImmunities(lines, actor) {
-        this.SetArrayValues(lines, "condition immunities ",
+    static setConditionImmunities(lines, actor) {
+        this.setArrayValues(lines, "condition immunities ",
             async (values) => {
                 await actor.update(sbiUtils.assignToObject({}, "data.traits.ci.value", values));
             });
     }
 
     // Example: Senses darkvision 60 ft., passive Perception 18
-    static async SetSensesAsync(lines, actor) {
+    static async setSensesAsync(lines, actor) {
         const startText = "senses";
         const line = lines.find(line => line.toLowerCase().startsWith(startText));
 
         if (line != null) {
-            const senses = this.CombineLines(lines, line)
+            const senses = this.combineLines(lines, line)
                 .slice(startText.length)
                 .split(",")
                 .map(line => line.trim());
@@ -554,15 +553,15 @@ export class sbiParser {
     }
 
     // Example: Damage Resistances bludgeoning, piercing, and slashing from nonmagical weapons
-    static SetDamageVulnerabilities(lines, actor) {
-        this.SetArrayValues(lines, "damage vulnerabilities ",
+    static setDamageVulnerabilities(lines, actor) {
+        this.setArrayValues(lines, "damage vulnerabilities ",
             async (values) => {
                 await actor.update(sbiUtils.assignToObject({}, "data.traits.dv.value", values));
             });
     }
 
     // Example: Languages Common, Darakhul, Draconic, Elvish, Sylvan
-    static async SetLanguagesAsync(lines, actor) {
+    static async setLanguagesAsync(lines, actor) {
         const knownLanguages = [
             "aarakocra",
             "abyssal",
@@ -595,10 +594,10 @@ export class sbiParser {
         const line = lines.find(line => line.toLowerCase().startsWith(startText));
 
         if (line != null) {
-            const foundLine = line.toLowerCase().replace(startText, "");
-            const values = foundLine.split(",").map(str => this.ConvertLanguage(str));
+            const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
+            const values = foundLine.split(",").map(str => this.convertLanguage(str));
             const knownValues = sbiUtils.intersect(values, knownLanguages);
-            const unknownValues = sbiUtils.except(values, knownValues).map(str => sbiUtils.capitalize(str));
+            const unknownValues = sbiUtils.except(values, knownValues).map(str => str);
 
             const actorData = {};
             sbiUtils.assignToObject(actorData, "data.traits.languages.value", knownValues);
@@ -610,7 +609,7 @@ export class sbiParser {
     }
 
     // Example: Challenge 11 (7,200 XP)
-    static async SetChallengeAsync(lines, actor) {
+    static async setChallengeAsync(lines, actor) {
         const foundMatch = lines
             .map(line => {
                 return { "line": line, "match": this.#challengeRegex.exec(line) }
@@ -640,8 +639,8 @@ export class sbiParser {
         }
     }
 
-    static async SetFeaturesAsync(lines, actor) {
-        const actionDescriptions = this.GetActionDescriptions(lines);
+    static async setFeaturesAsync(lines, actor) {
+        const actionDescriptions = this.getActionDescriptions(lines);
 
         for (const actionDescription of actionDescriptions) {
             const name = actionDescription.name;
@@ -661,7 +660,7 @@ export class sbiParser {
                 // At will: dancing lights, detect magic, invisibility 
                 // 3/day: charm person, faerie fire, mage armor 
                 // 1/day: spike growth
-                await this.SetSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
+                await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
             }
             else if (name.toLowerCase() === "spellcasting") {
                 // Example:
@@ -674,7 +673,7 @@ export class sbiParser {
                 // 3rd level (3 slots): dispel magic, remove curse, tongues
                 // 4th level (3 slots): banishment, greater invisibility
                 // 5th level (1 slot): legend lore
-                await this.SetSpellcastingAsync(description, itemData, actor, /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig);
+                await this.setSpellcastingAsync(description, itemData, actor, /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig);
             }
             else if (name.toLowerCase().startsWith("legendary resistance")) {
                 // Example:
@@ -693,8 +692,8 @@ export class sbiParser {
         }
     }
 
-    static async SetMajorAction(actionName, lines, actor) {
-        const actionDescriptions = this.GetActionDescriptions(lines);
+    static async setMajorAction(actionName, lines, actor) {
+        const actionDescriptions = this.getActionDescriptions(lines);
 
         // Construct one action block.
         const itemData = {};
@@ -748,7 +747,7 @@ export class sbiParser {
     }
 
     // Example: Melee Weapon Attack: +8 to hit, reach 5 ft.,one target.
-    static SetAttack(text, itemData, actor) {
+    static setAttack(text, itemData, actor) {
         const match = this.#attackRegex.exec(text);
 
         if (match !== null) {
@@ -756,11 +755,11 @@ export class sbiParser {
             sbiUtils.assignToObject(itemData, "data.weaponType", "natural");
             sbiUtils.assignToObject(itemData, "data.ability", actor.data.data.abilities.str.mod > actor.data.data.abilities.dex.mod ? "str" : "dex");
 
-            this.SetDamageRolls(text, itemData, "hit:");
+            this.setDamageRolls(text, itemData, "hit:");
         }
     }
 
-    static async SetSpellcastingAsync(description, itemData, actor, spellRegex) {
+    static async setSpellcastingAsync(description, itemData, actor, spellRegex) {
         const spellMatches = [...description.matchAll(spellRegex)];
         let spellDatas = [];
 
@@ -781,8 +780,8 @@ export class sbiParser {
                 featureDescription.push(`<p><b>${match[0]}</b> ${spellNames.join(", ")}</p>`);
                 lastIndex = match.index;
 
-                const slots = this.GetGroupValue("slots", [...match[0].matchAll(this.#spellCastingRegex)]);
-                const perday = this.GetGroupValue("perday", [...match[0].matchAll(this.#spellCastingRegex)]);
+                const slots = this.getGroupValue("slots", [...match[0].matchAll(this.#spellCastingRegex)]);
+                const perday = this.getGroupValue("perday", [...match[0].matchAll(this.#spellCastingRegex)]);
                 let spellCount;
 
                 if (slots) {
@@ -806,10 +805,10 @@ export class sbiParser {
         }
 
         // Set the spellcasting ability.
-        const spellcastingAbility = this.GetGroupValue("ability", [...description.matchAll(this.#spellCastingRegex)]);
+        const spellcastingAbility = this.getGroupValue("ability", [...description.matchAll(this.#spellCastingRegex)]);
 
         if (spellcastingAbility != null) {
-            const actorData = sbiUtils.assignToObject({}, "data.attributes.spellcasting", this.ConvertToShortAbility(spellcastingAbility));
+            const actorData = sbiUtils.assignToObject({}, "data.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility));
             await actor.update(actorData)
         }
 
@@ -838,7 +837,7 @@ export class sbiParser {
 
     // Example: Each creature in the cone must make a DC 13 Dexterity saving throw, taking 44 (8d10) 
     // cold damage on a failed save or half as much damage on a ssuccessful one.
-    static SetSavingThrow(text, itemData) {
+    static setSavingThrow(text, itemData) {
         const match = this.#savingThrowRegex.exec(text);
 
         if (match !== null) {
@@ -846,16 +845,16 @@ export class sbiParser {
             const ability = match.groups.saveability;
 
             sbiUtils.assignToObject(itemData, "data.actionType", "save");
-            sbiUtils.assignToObject(itemData, "data.save.ability", this.ConvertToShortAbility(ability));
+            sbiUtils.assignToObject(itemData, "data.save.ability", this.convertToShortAbility(ability));
             sbiUtils.assignToObject(itemData, "data.save.dc", parseInt(dc));
             sbiUtils.assignToObject(itemData, "data.save.scaling", "flat");
 
-            this.SetDamageRolls(text, itemData, "saving throw");
+            this.setDamageRolls(text, itemData, "saving throw");
         }
     }
 
     // Example: Frost Breath (Recharge 5–6).
-    static SetRecharge(text, itemData) {
+    static setRecharge(text, itemData) {
         const match = this.#rechargeRegex.exec(text);
 
         if (match !== null) {
@@ -865,7 +864,7 @@ export class sbiParser {
     }
 
     // Example: The hound exhales a 15-foot cone of frost.
-    static SetTarget(text, itemData) {
+    static setTarget(text, itemData) {
         const match = this.#targetRegex.exec(text);
 
         if (match !== null) {
@@ -876,7 +875,7 @@ export class sbiParser {
     }
 
     // Example: Melee Weapon Attack: +8 to hit, reach 5 ft., one target.
-    static SetReach(text, itemData) {
+    static setReach(text, itemData) {
         const match = this.#reachRegex.exec(text);
 
         if (match !== null) {
@@ -889,7 +888,7 @@ export class sbiParser {
     }
 
     // Example: Ranged Weapon Attack: +7 to hit, range 150/600 ft., one target.
-    static SetRange(text, itemData) {
+    static setRange(text, itemData) {
         const match = this.#rangeRegex.exec(text);
 
         if (match !== null) {
@@ -909,7 +908,7 @@ export class sbiParser {
     // or
     // Frost Breath (Recharge 5–6). The hound exhales a 15-foot cone of frost. Each creature in the cone must make a DC 13 
     // Dexterity saving throw, taking 44(8d10) cold damage on a failed save or half as much damage on a successful one.
-    static SetDamageRolls(text, itemData, lookup) {
+    static setDamageRolls(text, itemData, lookup) {
         const regexQuery = sbiUtils.format(this.#damageRollsQuery, lookup);
         const regex = new RegExp(regexQuery, "i");
         const match = regex.exec(text);
@@ -953,7 +952,7 @@ export class sbiParser {
     }
 
     // Combines lines of text into sentences and paragraphs.
-    static GetActionDescriptions(lines) {
+    static getActionDescriptions(lines) {
         const result = [];
         let actionDescription = null;
         let foundSentenceEnd = true;
@@ -995,7 +994,7 @@ export class sbiParser {
         }
 
         for (const actionDescription of result) {
-            actionDescription.description = this.FormatForDisplay(actionDescription.description);
+            actionDescription.description = this.formatForDisplay(actionDescription.description);
         }
 
         return result;
@@ -1005,7 +1004,7 @@ export class sbiParser {
     // Utilities
     // ===============================
 
-    static IsLineIgnored(line) {
+    static isLineIgnored(line) {
         const ignoreList = [
             "proficiency bonus",
             "traits"
@@ -1014,7 +1013,7 @@ export class sbiParser {
         return ignoreList.find(ignore => line.toLowerCase().startsWith(ignore)) != null;
     }
 
-    static FormatForDisplay(text) {
+    static formatForDisplay(text) {
         const textArr = text.replaceAll("•", "\n•").split("\n");
 
         if (textArr.length > 1) {
@@ -1025,11 +1024,11 @@ export class sbiParser {
         }
     }
 
-    static SetArrayValues(lines, startText, setValueFunc) {
+    static setArrayValues(lines, startText, setValueFunc) {
         const line = lines.find(line => line.toLowerCase().startsWith(startText));
 
         if (line != null) {
-            const foundLine = this.CombineLines(lines, line)
+            const foundLine = this.combineLines(lines, line)
                 .slice(startText.length)
                 .toLowerCase();
 
@@ -1043,7 +1042,7 @@ export class sbiParser {
         }
     }
 
-    static CombineLines(lines, startingLine) {
+    static combineLines(lines, startingLine) {
         // The "line beginnings" check is here to handle the block of attributes right under the ability scores.
         const lineBeginnings = [
             "damage vulnerabilities",
@@ -1089,7 +1088,7 @@ export class sbiParser {
         return combinedLines.join(" ").replace("- ", "-");
     }
 
-    static ConvertLanguage(language) {
+    static convertLanguage(language) {
         let result = language.trim().toLowerCase();
 
         switch (result) {
@@ -1106,7 +1105,7 @@ export class sbiParser {
         return result;
     }
 
-    static GetGroupValue(group, matches) {
+    static getGroupValue(group, matches) {
         if (matches && matches.length) {
             return matches.map(m => m.groups[group]).find(val => val);
         }
@@ -1114,7 +1113,7 @@ export class sbiParser {
         return null;
     }
 
-    static ConvertToShortAbility(abilityName) {
+    static convertToShortAbility(abilityName) {
         const ability = abilityName.toLowerCase();
 
         switch (ability) {
@@ -1129,7 +1128,7 @@ export class sbiParser {
         }
     }
 
-    static ConvertToShortSkill(skillName) {
+    static convertToShortSkill(skillName) {
         const skill = skillName.toLowerCase();
 
         switch (skill) {
