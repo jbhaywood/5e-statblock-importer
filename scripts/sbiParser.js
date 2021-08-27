@@ -25,6 +25,7 @@ export class sbiParser {
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
     static #challengeRegex = /^challenge (?<cr>[\d/]+) \((?<xp>[\d,]+)/i;
     static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
+    static #spellLevelRegex = /(?<level>\d+)(.+)level spellcaster/i;
     static #attackRegex = /(attack|damage): \+(?<tohit>\d+) to hit/i;
     static #reachRegex = /reach (?<reach>\d+) ft/i;
     static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ft/i;
@@ -93,7 +94,7 @@ export class sbiParser {
             await this.setInitiativeAsync(storedLines, actor);
             await this.setAbilitiesAsync(storedLines, actor);
             await this.setSavingThrowsAsync(storedLines, actor);
-            await this.setSkillsAsync(storedLines, actor);
+            const skillData = await this.setSkillsAsync(storedLines, actor);
             await this.setDamagesAsync(storedLines, actor, "resistances");
             await this.setDamagesAsync(storedLines, actor, "immunities");
             this.setConditionImmunities(storedLines, actor);
@@ -102,6 +103,7 @@ export class sbiParser {
             await this.setLanguagesAsync(storedLines, actor);
             await this.setChallengeAsync(storedLines, actor);
             await this.setFeaturesAsync(storedLines, actor);
+            await this.fixupSkillValues(actor, skillData);
 
             // Add the sections to the character actor.
             Object.entries(sections).forEach(async ([key, value]) => {
@@ -447,20 +449,36 @@ export class sbiParser {
     static async setSkillsAsync(lines, actor) {
         const startText = "skills";
         const line = lines.find(line => line.toLowerCase().startsWith(startText));
+        const skillData = {};
 
         if (line != null) {
             const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
             const matches = [...foundLine.matchAll(this.#skillsRegex)];
-            const actorData = {};
 
             for (const match of matches) {
+                // Set the total modifier value here, and we'll fix up the 'value' later.
                 const name = this.convertToShortSkill(match.groups.name);
-                const propPath = `data.skills.${name}.value`;
-                sbiUtils.assignToObject(actorData, propPath, 1);
+                const skillMod = parseInt(match.groups.modifier);
+                skillData[name] = skillMod;
             }
 
-            await actor.update(actorData);
             sbiUtils.remove(lines, line);
+        }
+
+        // Return the skills with profiency and their total modifer so we can use this information to
+        // set the proficiency 'value' later after we're able to get the character's proficiency bonus.
+        return skillData;
+    }
+
+    // Calculate skill proficiency value. 1 is regular proficiency, 2 is double proficiency, etc.
+    static async fixupSkillValues(actor, skillData) {
+        for (let [key, value] of Object.entries(skillData)) {
+            const skill = actor.data.data.skills[key];
+            const abilityMod = actor.data.data.abilities[skill.ability].mod;
+            const generalProf = actor.data.data.attributes.prof;
+            const skillProf = (value - abilityMod) / generalProf;
+
+            await actor.update(sbiUtils.assignToObject({}, `data.skills.${key}.value`, skillProf));
         }
     }
 
@@ -651,7 +669,6 @@ export class sbiParser {
             itemData.type = "feat";
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
-            sbiUtils.assignToObject(itemData, "data.activation.type", "none");
 
             if (name.toLowerCase() === "innate spellcasting") {
                 // Example:
@@ -678,13 +695,19 @@ export class sbiParser {
             else if (name.toLowerCase().startsWith("legendary resistance")) {
                 // Example:
                 // Legendary Resistance (3/day)
-                const resistanceCountRegex = /(?<perday>\d+)\/day/i;
+                const resistanceCountRegex = /\((?<perday>\d+)\/day\)/i;
                 const resistanceMatch = resistanceCountRegex.exec(name);
 
                 if (resistanceMatch) {
+                    itemData.name = itemData.name.slice(0, resistanceMatch.index).trim();
                     await actor.update(sbiUtils.assignToObject({}, "data.resources.legres.value", parseInt(resistanceMatch.groups.perday)));
                     await actor.update(sbiUtils.assignToObject({}, "data.resources.legres.max", parseInt(resistanceMatch.groups.perday)));
                 }
+
+                sbiUtils.assignToObject(itemData, "data.activation.type", "special");
+                sbiUtils.assignToObject(itemData, "data.consume.type", "attribute");
+                sbiUtils.assignToObject(itemData, "data.consume.target", "resources.legres.value");
+                sbiUtils.assignToObject(itemData, "data.consume.amount", 1);
             }
 
             const item = new Item(itemData);
@@ -694,56 +717,74 @@ export class sbiParser {
 
     static async setMajorAction(actionName, lines, actor) {
         const actionDescriptions = this.getActionDescriptions(lines);
+        let activationType = "";
 
-        // Construct one action block.
-        const itemData = {};
         for (let index = 0; index < actionDescriptions.length; index++) {
             const actionDescription = actionDescriptions[index];
+            const itemData = {};
+            itemData.name = actionName;
+            itemData.type = "feat";
+
+            sbiUtils.assignToObject(itemData, "data.description.value", actionDescription.description);
 
             if (index == 0) {
-                itemData.name = actionName;
-                itemData.type = "feat";
-
-                sbiUtils.assignToObject(itemData, "data.description.value", `<p>${actionDescription.description}</p>`);
-
                 // Add these just so that it doesn't say the action is not equipped and not proficient in the UI.
                 sbiUtils.assignToObject(itemData, "data.equipped", true);
                 sbiUtils.assignToObject(itemData, "data.proficient", true);
 
                 // Determine whether this is a legendary or lair action.
-                let itemType = null;
-
                 if (actionName.toLowerCase() === "lair actions") {
-                    itemType = "lair";
+                    sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "lair");
 
                     // What iniative count does the lair action activate?
                     const lairInitiativeRegex = /initiative count (?<count>\d+)/i;
                     const lairInitiativeMatch = lairInitiativeRegex.exec(actionDescription.description);
 
-                    await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.value", true));
-                    await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
+                    if (lairInitiativeMatch) {
+                        await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.value", true));
+                        await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
+                    }
                 }
                 else if (actionName.toLowerCase() === "legendary actions") {
-                    itemType = "legendary";
+                    activationType = "legendary";
+                    sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "legendary");
 
                     // How many legendary actions can it take?
                     const legendaryActionCountRegex = /take (?<count>\d+) legendary/i;
                     const legendaryActionMatch = legendaryActionCountRegex.exec(actionDescription.description);
 
                     if (legendaryActionMatch) {
-                        await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.value", parseInt(legendaryActionMatch.groups.count)));
-                        await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.max", parseInt(legendaryActionMatch.groups.count)));
+                        const actionCount = parseInt(legendaryActionMatch.groups.count);
+                        await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.value", actionCount));
+                        await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.max", actionCount));
                     }
                 }
 
-                sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", itemType);
+                const item = new Item(itemData);
+                await actor.createEmbeddedDocuments("Item", [item.toObject()]);
             } else {
-                itemData.data.description.value = `${itemData.data.description.value}\n<p><b>${actionDescription.name}</b>\n${actionDescription.description}</p>`;
+                itemData.name = actionDescription.name;
+                sbiUtils.assignToObject(itemData, "data.activation.type", activationType);
+
+                // How many actions does this cost?
+                const actionCostRegex = /\(costs (?<cost>\d+) actions\)/i;
+                const actionCostMatch = actionCostRegex.exec(actionDescription.name);
+                let actionCost = 1;
+
+                if (actionCostMatch) {
+                    actionCost = parseInt(actionCostMatch.groups.cost);
+                    itemData.name = itemData.name.slice(0, actionCostMatch.index).trim();
+                }
+
+                sbiUtils.assignToObject(itemData, "data.consume.type", "attribute");
+                sbiUtils.assignToObject(itemData, "data.consume.target", "resources.legact.value");
+                sbiUtils.assignToObject(itemData, "data.consume.amount", actionCost);
+                sbiUtils.assignToObject(itemData, "data.activation.cost", actionCost);
+
+                const item = new Item(itemData);
+                await actor.createEmbeddedDocuments("Item", [item.toObject()]);
             }
         }
-
-        const item = new Item(itemData);
-        await actor.createEmbeddedDocuments("Item", [item.toObject()]);
     }
 
     // Example: Melee Weapon Attack: +8 to hit, reach 5 ft.,one target.
@@ -762,6 +803,13 @@ export class sbiParser {
     static async setSpellcastingAsync(description, itemData, actor, spellRegex) {
         const spellMatches = [...description.matchAll(spellRegex)];
         let spellDatas = [];
+
+        // Set spell level
+        const spellLevelMatch = this.#spellLevelRegex.exec(description);
+
+        if (spellLevelMatch) {
+            await actor.update(sbiUtils.assignToObject({}, "data.details.spellLevel", parseInt(spellLevelMatch.groups.level)));
+        }
 
         // Put spell groups on their own lines in the description so that it reads better.
         if (spellMatches.length) {
