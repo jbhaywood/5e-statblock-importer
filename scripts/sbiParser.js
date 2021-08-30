@@ -14,16 +14,16 @@ export class sbiParser {
     // For action titles, the first word has to start with a capitol letter, followed by 0-3 other words,
     // followed by a period. Support words with hyphens, non-capitol first letter, and parentheses like '(Recharge 5-6)'.
     static #actionTitleRegex = /^(([A-Z]\w+[ \-]?)(\w+ ?){0,3}(\([\w –\-\/]+\))?)\./;
-    static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b) (?<type>\w+)[,|\s]+(\((?<race>[\w|\s]+)\))?[,|\s]+(?<alignment>[\w|\s]+)/i;
-    static #armorRegex = /^(armor class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
-    static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( \+ \d+)?)\)/i;
+    static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)\s(?<type>\w+)([,|\s]+\((?<race>[\w|\s]+)\))?([,|\s]+(?<alignment>[\w|\s]+))?/i;
+    static #armorRegex = /^((armor|armour) class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
+    static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( ?\+ ?\d+)?)\)/i;
     static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
     static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/gi;
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|\-|−|–]\d+)\)/g;
     static #abilitySavesRegex = /(?<name>\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b) (?<modifier>[\+|-]\d+)/ig;
     static #skillsRegex = /(?<name>\bacrobatics\b|\barcana\b|\banimal handling\b|\bathletics\b|\bdeception\b|\bhistory\b|\binsight\b|\bintimidation\b|\binvestigation\b|\bmedicine\b|\bnature\b|\bperception\b|\bperformance\b|\bpersuasion\b|\breligion\b|\bsleight of hand\b|\bstealth\b|\bsurvival\b) (?<modifier>[\+|-]\d+)/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
-    static #challengeRegex = /^challenge (?<cr>[\d/]+) \((?<xp>[\d,]+)/i;
+    static #challengeRegex = /^challenge (?<cr>(½|[\d/]+)) \((?<xp>[\d,]+)/i;
     static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
     static #spellLevelRegex = /(?<level>\d+)(.+)level spellcaster/i;
     static #attackRegex = /(attack|damage): \+(?<tohit>\d+) to hit/i;
@@ -83,7 +83,7 @@ export class sbiParser {
             const actorName = storedLines.shift();
 
             const actor = await Actor.create({
-                name: sbiUtils.capitalize(actorName),
+                name: sbiUtils.capitalizeAll(actorName),
                 type: "npc"
             });
 
@@ -107,7 +107,7 @@ export class sbiParser {
 
             // Add the sections to the character actor.
             Object.entries(sections).forEach(async ([key, value]) => {
-                const sectionHeader = sbiUtils.capitalize(key);
+                const sectionHeader = sbiUtils.capitalizeAll(key);
 
                 if (sectionHeader.toLowerCase() === "actions") {
                     await this.setActionsAsync(value, actor);
@@ -135,7 +135,7 @@ export class sbiParser {
             const description = actionDescription.description;
 
             const itemData = {};
-            itemData.name = sbiUtils.capitalize(name);
+            itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
@@ -175,7 +175,7 @@ export class sbiParser {
             const description = actionDescription.description;
 
             const itemData = {};
-            itemData.name = sbiUtils.capitalize(name);
+            itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
 
             sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "reaction");
@@ -221,9 +221,9 @@ export class sbiParser {
                     break;
             }
 
-            sbiUtils.assignToObject(detailsData, "data.details.alignment", sbiUtils.capitalize(matchObj.match.groups.alignment?.trim()));
-            sbiUtils.assignToObject(detailsData, "data.details.race", sbiUtils.capitalize(matchObj.match.groups.race?.trim()));
-            sbiUtils.assignToObject(detailsData, "data.details.type", sbiUtils.capitalize(matchObj.match.groups.type?.trim()));
+            sbiUtils.assignToObject(detailsData, "data.details.alignment", sbiUtils.capitalizeAll(matchObj.match.groups.alignment?.trim()));
+            sbiUtils.assignToObject(detailsData, "data.details.race", sbiUtils.capitalizeAll(matchObj.match.groups.race?.trim()));
+            sbiUtils.assignToObject(detailsData, "data.details.type", sbiUtils.capitalizeAll(matchObj.match.groups.type?.trim()));
 
             await actor.update(detailsData);
             sbiUtils.remove(lines, matchObj.line);
@@ -348,7 +348,7 @@ export class sbiParser {
                         "attributes": {
                             "speed": {
                                 "special": otherSpeeds
-                                    .map(obj => `${sbiUtils.capitalize(obj.name)} ${obj.value} ft.`)
+                                    .map(obj => `${sbiUtils.capitalizeAll(obj.name)} ${obj.value} ft.`)
                                     .join(", ")
                             },
                             "movement": {
@@ -399,16 +399,15 @@ export class sbiParser {
 
                 foundLines.push(line);
             }
-            else {
-                // Look for ability values, like 18 (+4).
-                const valueMatches = [...trimmedLine.matchAll(this.#abilityValuesRegex)];
 
-                if (valueMatches.length) {
-                    const values = valueMatches.map(m => m.groups.base);
-                    foundAbilityValues.push.apply(foundAbilityValues, values);
+            // Look for ability values, like 18 (+4).
+            const valueMatches = [...trimmedLine.matchAll(this.#abilityValuesRegex)];
 
-                    foundLines.push(line);
-                }
+            if (valueMatches.length) {
+                const values = valueMatches.map(m => m.groups.base);
+                foundAbilityValues.push.apply(foundAbilityValues, values);
+
+                foundLines.push(line);
             }
         }
 
@@ -560,7 +559,7 @@ export class sbiParser {
                     const name = match.groups.name.toLowerCase();
                     sbiUtils.assignToObject(actorData, `data.attributes.senses.${name}`, parseInt(match.groups.modifier));
                 } else {
-                    sbiUtils.assignToObject(actorData, "data.attributes.senses.special", sbiUtils.capitalize(sense));
+                    sbiUtils.assignToObject(actorData, "data.attributes.senses.special", sbiUtils.capitalizeAll(sense));
                 }
             }
 
@@ -615,7 +614,7 @@ export class sbiParser {
             const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
             const values = foundLine.split(",").map(str => this.convertLanguage(str));
             const knownValues = sbiUtils.intersect(values, knownLanguages);
-            const unknownValues = sbiUtils.except(values, knownValues).map(str => str);
+            const unknownValues = sbiUtils.except(values, knownValues).map(str => sbiUtils.capitalizeFirstLetter(str));
 
             const actorData = {};
             sbiUtils.assignToObject(actorData, "data.traits.languages.value", knownValues);
@@ -641,7 +640,10 @@ export class sbiParser {
             // Handle fractions.
             let crNumber = 0;
 
-            if (crValue.includes("/")) {
+            if (crValue === "½") {
+                crNumber = 0.5;
+            }
+            else if (crValue.includes("/")) {
                 crNumber = sbiUtils.parseFraction(crValue);
             }
             else {
@@ -665,7 +667,7 @@ export class sbiParser {
             const description = actionDescription.description;
 
             const itemData = {};
-            itemData.name = sbiUtils.capitalize(name);
+            itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
@@ -823,7 +825,7 @@ export class sbiParser {
                     .slice(match.index, lastIndex)
                     .slice(match[0].length)
                     .split(",")
-                    .map(spell => sbiUtils.capitalize(spell.trim()));
+                    .map(spell => sbiUtils.capitalizeAll(spell.trim()));
 
                 featureDescription.push(`<p><b>${match[0]}</b> ${spellNames.join(", ")}</p>`);
                 lastIndex = match.index;

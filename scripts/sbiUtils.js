@@ -58,8 +58,8 @@ export class sbiUtils {
     // String Functions    
     // ==========================
 
-    // capitalize("passive perception") => "Passive Perception"
-    static capitalize(string) {
+    // capitalizeAll("passive perception") => "Passive Perception"
+    static capitalizeAll(string) {
         if (!string) {
             return null;
         }
@@ -67,6 +67,11 @@ export class sbiUtils {
         return string.toLowerCase().replace(/^\w|\s\w/g, function (letter) {
             return letter.toUpperCase();
         })
+    }
+
+    // capitalizeFirstLetter("passive perception") => "Passive perception"
+    static capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
     }
 
     // format("{0} comes before {1}", "a", "b") => "a comes before b"
