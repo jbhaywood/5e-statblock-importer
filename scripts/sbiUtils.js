@@ -100,6 +100,11 @@ export class sbiUtils {
         return result;
     }
 
+    static exactMatch(string, regex) {
+        const match = string.match(regex);
+        return match && match[0] === string;
+    }
+
     // ==========================
     // Array Functions    
     // ==========================

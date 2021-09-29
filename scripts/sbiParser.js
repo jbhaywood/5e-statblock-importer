@@ -22,6 +22,7 @@ export class sbiParser {
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|\-|−|–]\d+)\)/g;
     static #abilitySavesRegex = /(?<name>\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b) (?<modifier>[\+|-]\d+)/ig;
     static #skillsRegex = /(?<name>\bacrobatics\b|\barcana\b|\banimal handling\b|\bathletics\b|\bdeception\b|\bhistory\b|\binsight\b|\bintimidation\b|\binvestigation\b|\bmedicine\b|\bnature\b|\bperception\b|\bperformance\b|\bpersuasion\b|\breligion\b|\bsleight of hand\b|\bstealth\b|\bsurvival\b) (?<modifier>[\+|-]\d+)/ig;
+    static #damageTypesRegex = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b |\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b|/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
     static #challengeRegex = /^challenge (?<cr>(½|[\d/]+)) \((?<xp>[\d,]+)/i;
     static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
@@ -39,13 +40,14 @@ export class sbiParser {
         if (lines.length) {
             const sectionHeaders = [
                 "actions",
+                "bonus actions",
                 "reactions",
                 "legendary actions",
                 "lair actions",
                 "regional effects"
             ];
 
-            // Save off the lines that preceed the first of the above sections.
+            // Save off all the lines that preceed the first of the above sections.
             const storedLines = [];
 
             for (let i = 0; i < lines.length; i++) {
@@ -71,8 +73,14 @@ export class sbiParser {
             for (const line of lines) {
                 const trimmedLine = line.trim();
 
-                if (sectionHeaders.includes(trimmedLine.toLowerCase())) {
-                    header = trimmedLine;
+                if (this.isLineIgnored(line)) {
+                    continue;
+                }
+
+                const sectionName = trimmedLine.toLowerCase();
+
+                if (sectionHeaders.includes(sectionName)) {
+                    header = sectionName;
                     sections[header] = [];
                 }
                 else if (sections[header]) {
@@ -109,16 +117,16 @@ export class sbiParser {
             Object.entries(sections).forEach(async ([key, value]) => {
                 const sectionHeader = sbiUtils.capitalizeAll(key);
 
-                if (sectionHeader.toLowerCase() === "actions") {
+                if (key === "actions") {
                     await this.setActionsAsync(value, actor);
                 }
-                else if (sectionHeader.toLowerCase() === "reactions") {
-                    await this.setReactionsAsync(value, actor);
+                else if (key === "reactions" || key === "bonus actions") {
+                    await this.setAlternateActionAsync(value, key, actor);
                 }
                 else {
-                    // Anything that isn't an action or reaction is a "major" action,
-                    // which are legendary actions and lair actions
-                    await this.setMajorAction(sectionHeader, value, actor);
+                    // Anything that isn't an action, reaction, or bonus action is a
+                    // "major" action, which are legendary actions and lair actions.
+                    await this.setMajorActionAsync(sectionHeader, value, actor);
                 }
             });
 
@@ -132,6 +140,7 @@ export class sbiParser {
 
         for (const actionDescription of actionDescriptions) {
             const name = actionDescription.name;
+            const lowerName = name.toLowerCase();
             const description = actionDescription.description;
 
             const itemData = {};
@@ -139,17 +148,20 @@ export class sbiParser {
             itemData.type = "feat";
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
+            sbiUtils.assignToObject(itemData, "data.activation.type", "action");
+            sbiUtils.assignToObject(itemData, "data.activation.cost", 1);
 
             // The "Multiattack" action isn't a real action, so there's nothing more to add to it.
-            if (name.toLowerCase() !== "multiattack") {
+            if (lowerName !== "multiattack") {
                 sbiUtils.assignToObject(itemData, "data.identified", true);
                 sbiUtils.assignToObject(itemData, "data.equipped", true);
                 sbiUtils.assignToObject(itemData, "data.proficient", true);
                 sbiUtils.assignToObject(itemData, "data.quantity", 1);
-                sbiUtils.assignToObject(itemData, "data.activation.type", "action");
-                sbiUtils.assignToObject(itemData, "data.activation.cost", 1);
 
-                if (name.toLowerCase() === "illumination") {
+                if (lowerName === "spellcasting") {
+                    await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
+                }
+                else if (lowerName === "illumination") {
                     this.SetIllumination(description, item);
                 }
                 else {
@@ -167,7 +179,7 @@ export class sbiParser {
         };
     }
 
-    static async setReactionsAsync(lines, actor) {
+    static async setAlternateActionAsync(lines, type, actor) {
         const actionDescriptions = this.getActionDescriptions(lines);
 
         for (const actionDescription of actionDescriptions) {
@@ -178,10 +190,20 @@ export class sbiParser {
             itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
 
-            sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "reaction");
             sbiUtils.assignToObject(itemData, "data.description.value", description);
-            sbiUtils.assignToObject(itemData, "data.activation.type", "reaction");
             sbiUtils.assignToObject(itemData, "data.activation.cost", 1);
+
+            let activationType = null;
+
+            if (type == "bonus actions") {
+                activationType = "bonus";
+            }
+            else if (type === "reactions") {
+                activationType = "reaction";
+            }
+
+            sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", activationType);
+            sbiUtils.assignToObject(itemData, "data.activation.type", activationType);
 
             const item = new Item(itemData);
             await actor.createEmbeddedDocuments("Item", [item.toObject()]);
@@ -487,21 +509,9 @@ export class sbiParser {
 
         if (line != null) {
             const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
-
-            const types = [
-                "bludgeoning",
-                "piercing",
-                "slashing",
-                "acid",
-                "cold",
-                "fire",
-                "lightning",
-                "necrotic",
-                "poison",
-                "psychic",
-                "radiant",
-                "thunder"
-            ].filter(type => foundLine.toLowerCase().includes(type));
+            const damageTypes = [...foundLine.matchAll(this.#damageTypesRegex)]
+                .filter(arr => arr[0].length)
+                .map(arr => arr[0]);
 
             let typeValue;
             switch (type) {
@@ -516,8 +526,8 @@ export class sbiParser {
             }
 
             if (typeValue) {
-                if (types.length) {
-                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.value`, types)
+                if (damageTypes.length) {
+                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.value`, damageTypes)
                     await actor.update(actorData);
                 }
 
@@ -563,17 +573,33 @@ export class sbiParser {
                 }
             }
 
-
             await actor.update(actorData);
             sbiUtils.remove(lines, line);
         }
     }
 
-    // Example: Damage Resistances bludgeoning, piercing, and slashing from nonmagical weapons
+    // Example: Damage Vulnerabilities bludgeoning, fire
     static setDamageVulnerabilities(lines, actor) {
         this.setArrayValues(lines, "damage vulnerabilities ",
             async (values) => {
-                await actor.update(sbiUtils.assignToObject({}, "data.traits.dv.value", values));
+                const knownTypes = [];
+                let customType = null;
+
+                for (const value of values) {
+                    if (sbiUtils.exactMatch(value, this.#damageTypesRegex)) {
+                        knownTypes.push(value);
+                    } else {
+                        customType = value;
+                    }
+                }
+
+                if (knownTypes.length) {
+                    await actor.update(sbiUtils.assignToObject({}, "data.traits.dv.value", knownTypes));
+                }
+
+                if (customType) {
+                    await actor.update(sbiUtils.assignToObject({}, "data.traits.dv.custom", sbiUtils.capitalizeFirstLetter(customType)));
+                }
             });
     }
 
@@ -664,6 +690,7 @@ export class sbiParser {
 
         for (const actionDescription of actionDescriptions) {
             const name = actionDescription.name;
+            const lowerName = name.toLowerCase();
             const description = actionDescription.description;
 
             const itemData = {};
@@ -672,7 +699,7 @@ export class sbiParser {
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
 
-            if (name.toLowerCase() === "innate spellcasting") {
+            if (lowerName === "innate spellcasting") {
                 // Example:
                 // Innate Spellcasting. The aridni's innate spellcasting ability is Charisma (spell save DC 14). 
                 // It can innately cast the following spells: 
@@ -681,7 +708,7 @@ export class sbiParser {
                 // 1/day: spike growth
                 await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
             }
-            else if (name.toLowerCase() === "spellcasting") {
+            else if (lowerName === "spellcasting") {
                 // Example:
                 // Spellcasting. The sphinx is a 9th-­‐level spellcaster. Its spellcasting ability is Intelligence (spell save DC 16, +8
                 // to hit with spell attacks). It requires no material components to cast its spells. The sphinx has the
@@ -694,7 +721,7 @@ export class sbiParser {
                 // 5th level (1 slot): legend lore
                 await this.setSpellcastingAsync(description, itemData, actor, /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig);
             }
-            else if (name.toLowerCase().startsWith("legendary resistance")) {
+            else if (lowerName.startsWith("legendary resistance")) {
                 // Example:
                 // Legendary Resistance (3/day)
                 const resistanceCountRegex = /\((?<perday>\d+)\/day\)/i;
@@ -717,8 +744,9 @@ export class sbiParser {
         }
     }
 
-    static async setMajorAction(actionName, lines, actor) {
+    static async setMajorActionAsync(actionName, lines, actor) {
         const actionDescriptions = this.getActionDescriptions(lines);
+        const lowerActionName = actionName.toLowerCase();
         let activationType = "";
 
         for (let index = 0; index < actionDescriptions.length; index++) {
@@ -735,7 +763,7 @@ export class sbiParser {
                 sbiUtils.assignToObject(itemData, "data.proficient", true);
 
                 // Determine whether this is a legendary or lair action.
-                if (actionName.toLowerCase() === "lair actions") {
+                if (lowerActionName === "lair actions") {
                     sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "lair");
 
                     // What iniative count does the lair action activate?
@@ -747,7 +775,7 @@ export class sbiParser {
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
                     }
                 }
-                else if (actionName.toLowerCase() === "legendary actions") {
+                else if (lowerActionName === "legendary actions") {
                     activationType = "legendary";
                     sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "legendary");
 
@@ -760,6 +788,9 @@ export class sbiParser {
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.value", actionCount));
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.max", actionCount));
                     }
+                }
+                else if (lowerActionName === "bonus actions") {
+                    activationType = "bonus";
                 }
 
                 const item = new Item(itemData);
@@ -1060,7 +1091,7 @@ export class sbiParser {
             "traits"
         ]
 
-        return ignoreList.find(ignore => line.toLowerCase().startsWith(ignore)) != null;
+        return line.length == 0 || ignoreList.find(ignore => line.toLowerCase().startsWith(ignore)) != null;
     }
 
     static formatForDisplay(text) {
