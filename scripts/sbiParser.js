@@ -390,11 +390,12 @@ export class sbiParser {
     }
 
     static async setInitiativeAsync(lines, actor) {
-        const line = lines.find(l => l.toLowerCase().startsWith("roll initiative"));
+        const line = lines.find(l => l.toLowerCase().startsWith("roll initiative") 
+            || l.toLowerCase().startsWith("initiative"));
 
         if (line != null) {
             const number = parseInt(sbiUtils.last(line.split(' ')));
-            await actor.update(sbiUtils.assignToObject(actorData, "data.attributes.init.bonus", number));
+            await actor.update(sbiUtils.assignToObject({}, "data.attributes.init.bonus", number));
             sbiUtils.remove(lines, line);
         }
     }
