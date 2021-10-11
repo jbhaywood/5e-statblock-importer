@@ -390,7 +390,7 @@ export class sbiParser {
     }
 
     static async setInitiativeAsync(lines, actor) {
-        const line = lines.find(l => l.toLowerCase().startsWith("roll initiative") 
+        const line = lines.find(l => l.toLowerCase().startsWith("roll initiative")
             || l.toLowerCase().startsWith("initiative"));
 
         if (line != null) {
@@ -700,7 +700,7 @@ export class sbiParser {
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
 
-            if (lowerName === "innate spellcasting") {
+            if (lowerName.includes("innate spellcasting")) {
                 // Example:
                 // Innate Spellcasting. The aridni's innate spellcasting ability is Charisma (spell save DC 14). 
                 // It can innately cast the following spells: 
@@ -864,6 +864,7 @@ export class sbiParser {
 
                 const slots = this.getGroupValue("slots", [...match[0].matchAll(this.#spellCastingRegex)]);
                 const perday = this.getGroupValue("perday", [...match[0].matchAll(this.#spellCastingRegex)]);
+                const spellType = description.toLowerCase().includes("innate spellcasting") ? "innate" : "slots";
                 let spellCount;
 
                 if (slots) {
@@ -876,6 +877,7 @@ export class sbiParser {
                     spellDatas.push({
                         // Remove text in parenthesis when storing the spell name for lookup later.
                         "name": spellName.replace(/\(.*\)/, "").trim(),
+                        "type": spellType,
                         "count": spellCount
                     });
                 }
@@ -884,6 +886,21 @@ export class sbiParser {
             const introDescription = `<p>${description.slice(0, spellMatches[0].index)}</p>`;
             const fullDescription = introDescription.concat(featureDescription.reverse().join("\n"));
             sbiUtils.assignToObject(itemData, "data.description.value", fullDescription);
+        } else {
+            // Some spell casting description bury the spell in the description, like Mehpits.
+            // Example: The mephit can innately cast fog cloud, requiring no material components.
+            // In that case search the description for every known spell.
+            const spell = await sbiUtils.tryGetFromPackAsync("dnd5e.spells", description);
+
+            if (spell) {
+                const perday = this.getGroupValue("perday", [...itemData.name.matchAll(this.#spellCastingRegex)]);
+
+                spellDatas.push({
+                    "name": spell.name,
+                    "type": "innate",
+                    "count": parseInt(perday)
+                });
+            }
         }
 
         // Set the spellcasting ability.
@@ -900,18 +917,30 @@ export class sbiParser {
                 const spell = await sbiUtils.getFromPackAsync("dnd5e.spells", spellData.name);
 
                 if (spell) {
+                    if (spellData.type == "slots") {
+                        // Update the actor's number of slots per level.
+                        let spellObject = {};
+                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellData.count);
+                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellData.count);
+                        sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellData.count);
+
+                        await actor.update(spellObject);
+                    } else if (spellData.type = "innate") {
+                        // Separate the 'per day' spells from the 'at will' spells.
+                        if (spellData.count) {
+                            sbiUtils.assignToObject(spell, `data.uses.value`, spellData.count);
+                            sbiUtils.assignToObject(spell, `data.uses.max`, spellData.count);
+                            sbiUtils.assignToObject(spell, `data.uses.per`, "day");
+                            sbiUtils.assignToObject(spell, `data.preparation.mode`, "innate");
+                        } else {
+                            sbiUtils.assignToObject(spell, `data.preparation.mode`, "atwill");
+                        }
+
+                        sbiUtils.assignToObject(spell, `data.preparation.prepared`, true);
+                    }
+
                     // Add the spell to the character sheet.
                     await actor.createEmbeddedDocuments("Item", [spell]);
-
-                    // Update the actor's number of slots per level. For monsters this isn't totally 
-                    // accurate because different spells of the same level can have a different number 
-                    // of uses per day. But nothing we can do about that.
-                    const spellObject = {};
-                    sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellData.count);
-                    sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellData.count);
-                    sbiUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellData.count);
-
-                    await actor.update(spellObject);
                 }
             }
         }

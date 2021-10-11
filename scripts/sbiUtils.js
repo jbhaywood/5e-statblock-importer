@@ -54,6 +54,23 @@ export class sbiUtils {
         return result;
     }
 
+    static async tryGetFromPackAsync(packName, text) {
+        let result = null;
+        const pack = game.packs.get(packName);
+        const searchText = text.toLowerCase();
+
+        if (pack) {
+            const item = pack.index.find(e => text.includes(e.name.toLowerCase()));
+
+            if (item) {
+                const itemDoc = await pack.getDocument(item._id);
+                result = itemDoc.toObject();
+            }
+        }
+
+        return result;
+    }
+
     // ==========================
     // String Functions    
     // ==========================
