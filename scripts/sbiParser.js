@@ -11,8 +11,8 @@ class ActionDescription {
 }
 
 export class sbiParser {
-    // For action titles, the first word has to start with a capitol letter, followed by 0-3 other words,
-    // followed by a period. Support words with hyphens, non-capitol first letter, and parentheses like '(Recharge 5-6)'.
+    // For action titles, the first word has to start with a capital letter, followed by 0-3 other words,
+    // followed by a period. Support words with hyphens, non-capital first letter, and parentheses like '(Recharge 5-6)'.
     static #actionTitleRegex = /^(([A-Z]\w+[ \-]?)(\w+ ?){0,3}(\([\w –\-\/]+\))?)\./;
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)\s(?<type>\w+)([,|\s]+\((?<race>[\w|\s]+)\))?([,|\s]+(?<alignment>[\w|\s]+))?/i;
     static #armorRegex = /^((armor|armour) class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
@@ -28,12 +28,12 @@ export class sbiParser {
     static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
     static #spellLevelRegex = /(?<level>\d+)(.+)level spellcaster/i;
     static #attackRegex = /(attack|damage): \+(?<tohit>\d+) to hit/i;
-    static #reachRegex = /reach (?<reach>\d+) ft/i;
-    static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ft/i;
+    static #reachRegex = /reach (?<reach>\d+) ?(ft|'|’)/i;
+    static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ?(ft|'|’)/i;
     static #rechargeRegex = /\(recharge (?<recharge>\d+)([–|-]\d+)?\)/i;
     static #savingThrowRegex = /dc (?<savedc>\d+) (?<saveability>\w+) saving throw/i;
-    static #versatileRegex = /\((?<damageroll>\d+d\d+( \+ \d+)?)\) (?<damagetype>\w+) damage if used with two hands/i;
-    static #targetRegex = /(?<range>\d+)-foot (?<shape>\w+)/i;
+    static #versatileRegex = /\((?<damageroll>\d+d\d+( ?\+ ?\d+)?)\) (?<damagetype>\w+) damage if used with two hands/i;
+    static #targetRegex = /(?<range>\d+)?-(foot|ft?.|'|’) (?<shape>\w+)/i;
     static #damageRollsQuery = "(?<={0})[\\s\\w\\d,]+\\((?<damageroll1>\\d+d\\d+)( \\+ (?<damagemod1>\\d+))?\\) (?<damagetype1>\\w+)(.+plus.+\\((?<damageroll2>\\d+d\\d+( \\+ (?<damagemod2>\\d+))?)\\) (?<damagetype2>\\w+))?";
 
     static async parseInput(lines) {
