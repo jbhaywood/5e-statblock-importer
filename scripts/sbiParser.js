@@ -1,4 +1,6 @@
-import { sbiUtils } from "./sbiUtils.js";
+import {
+    sbiUtils
+} from "./sbiUtils.js";
 
 class ActionDescription {
     name;
@@ -59,8 +61,7 @@ export class sbiParser {
 
                 if (!sectionHeaders.includes(line.toLowerCase())) {
                     storedLines.push(line);
-                }
-                else {
+                } else {
                     lines.splice(0, i);
                     break;
                 }
@@ -82,8 +83,7 @@ export class sbiParser {
                 if (sectionHeaders.includes(sectionName)) {
                     header = sectionName;
                     sections[header] = [];
-                }
-                else if (sections[header]) {
+                } else if (sections[header]) {
                     sections[header].push(trimmedLine);
                 }
             }
@@ -119,11 +119,9 @@ export class sbiParser {
 
                 if (key === "actions") {
                     await this.setActionsAsync(value, actor);
-                }
-                else if (key === "reactions" || key === "bonus actions") {
+                } else if (key === "reactions" || key === "bonus actions") {
                     await this.setAlternateActionAsync(value, key, actor);
-                }
-                else {
+                } else {
                     // Anything that isn't an action, reaction, or bonus action is a
                     // "major" action, which are legendary actions and lair actions.
                     await this.setMajorActionAsync(sectionHeader, value, actor);
@@ -160,11 +158,9 @@ export class sbiParser {
 
                 if (lowerName === "spellcasting") {
                     await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
-                }
-                else if (lowerName === "illumination") {
+                } else if (lowerName === "illumination") {
                     this.SetIllumination(description, item);
-                }
-                else {
+                } else {
                     this.setAttack(description, itemData, actor);
                     this.setSavingThrow(description, itemData);
                     this.setRecharge(name, itemData);
@@ -197,8 +193,7 @@ export class sbiParser {
 
             if (type == "bonus actions") {
                 activationType = "bonus";
-            }
-            else if (type === "reactions") {
+            } else if (type === "reactions") {
                 activationType = "reaction";
             }
 
@@ -390,8 +385,8 @@ export class sbiParser {
     }
 
     static async setInitiativeAsync(lines, actor) {
-        const line = lines.find(l => l.toLowerCase().startsWith("roll initiative")
-            || l.toLowerCase().startsWith("initiative"));
+        const line = lines.find(l => l.toLowerCase().startsWith("roll initiative") ||
+            l.toLowerCase().startsWith("initiative"));
 
         if (line != null) {
             const number = parseInt(sbiUtils.last(line.split(' ')));
@@ -656,7 +651,10 @@ export class sbiParser {
     static async setChallengeAsync(lines, actor) {
         const foundMatch = lines
             .map(line => {
-                return { "line": line, "match": this.#challengeRegex.exec(line) }
+                return {
+                    "line": line,
+                    "match": this.#challengeRegex.exec(line)
+                }
             })
             .filter(obj => obj.match !== null)
             .find(obj => obj.match.length);
@@ -669,11 +667,9 @@ export class sbiParser {
 
             if (crValue === "½") {
                 crNumber = 0.5;
-            }
-            else if (crValue.includes("/")) {
+            } else if (crValue.includes("/")) {
                 crNumber = sbiUtils.parseFraction(crValue);
-            }
-            else {
+            } else {
                 crNumber = parseInt(foundMatch.match.groups.cr);
             }
 
@@ -708,8 +704,7 @@ export class sbiParser {
                 // 3/day: charm person, faerie fire, mage armor 
                 // 1/day: spike growth
                 await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
-            }
-            else if (lowerName === "spellcasting") {
+            } else if (lowerName === "spellcasting") {
                 // Example:
                 // Spellcasting. The sphinx is a 9th-­‐level spellcaster. Its spellcasting ability is Intelligence (spell save DC 16, +8
                 // to hit with spell attacks). It requires no material components to cast its spells. The sphinx has the
@@ -721,8 +716,7 @@ export class sbiParser {
                 // 4th level (3 slots): banishment, greater invisibility
                 // 5th level (1 slot): legend lore
                 await this.setSpellcastingAsync(description, itemData, actor, /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig);
-            }
-            else if (lowerName.startsWith("legendary resistance")) {
+            } else if (lowerName.startsWith("legendary resistance")) {
                 // Example:
                 // Legendary Resistance (3/day)
                 const resistanceCountRegex = /\((?<perday>\d+)\/day\)/i;
@@ -775,8 +769,7 @@ export class sbiParser {
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.value", true));
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
                     }
-                }
-                else if (lowerActionName === "legendary actions") {
+                } else if (lowerActionName === "legendary actions") {
                     activationType = "legendary";
                     sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "legendary");
 
@@ -789,8 +782,7 @@ export class sbiParser {
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.value", actionCount));
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.max", actionCount));
                     }
-                }
-                else if (lowerActionName === "bonus actions") {
+                } else if (lowerActionName === "bonus actions") {
                     activationType = "bonus";
                 }
 
@@ -1079,17 +1071,14 @@ export class sbiParser {
                     line.slice(match[match.index].length).trim());
 
                 result.push(actionDescription);
-            }
-            else if (actionDescription == null) {
+            } else if (actionDescription == null) {
                 actionDescription = new ActionDescription("Description", line);
 
                 result.push(actionDescription);
-            }
-            else {
+            } else {
                 if (actionDescription.description == null) {
                     actionDescription.description = line;
-                }
-                else {
+                } else {
                     actionDescription.description = `${actionDescription.description} ${line}`;
                 }
             }
@@ -1129,8 +1118,7 @@ export class sbiParser {
 
         if (textArr.length > 1) {
             return `<p>${textArr.join("</p><p>")}</p>`
-        }
-        else {
+        } else {
             return textArr.join("");
         }
     }
@@ -1176,9 +1164,9 @@ export class sbiParser {
 
                 const nextLine = i < linesCount - 1 ? linesToCheck[i + 1] : null;
 
-                if (nextLine != null
-                    && (lineBeginnings.some(lb => nextLine.toLowerCase().startsWith(lb))
-                        || (currentLine.trimEnd().endsWith('.') && sbiUtils.startsWithCapital(nextLine)))) {
+                if (nextLine != null &&
+                    (lineBeginnings.some(lb => nextLine.toLowerCase().startsWith(lb)) ||
+                        (currentLine.trimEnd().endsWith('.') && sbiUtils.startsWithCapital(nextLine)))) {
                     break;
                 }
             }
@@ -1228,12 +1216,18 @@ export class sbiParser {
         const ability = abilityName.toLowerCase();
 
         switch (ability) {
-            case "strength": return "str";
-            case "dexterity": return "dex";
-            case "constitution": return "con";
-            case "intelligence": return "int";
-            case "wisdom": return "wis";
-            case "charisma": return "cha";
+            case "strength":
+                return "str";
+            case "dexterity":
+                return "dex";
+            case "constitution":
+                return "con";
+            case "intelligence":
+                return "int";
+            case "wisdom":
+                return "wis";
+            case "charisma":
+                return "cha";
             default:
                 return ability;
         }

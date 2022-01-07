@@ -1,6 +1,12 @@
-import { sbiUtils } from "./sbiUtils.js";
-import { sbiParser } from "./sbiParser.js";
-import { sbiConfig } from "./sbiConfig.js";
+import {
+    sbiUtils
+} from "./sbiUtils.js";
+import {
+    sbiParser
+} from "./sbiParser.js";
+import {
+    sbiConfig
+} from "./sbiConfig.js";
 
 export class sbiWindow extends Application {
 
@@ -34,7 +40,7 @@ export class sbiWindow extends Application {
         super.activateListeners(html);
 
         let importButton = $("#sbi-import-button");
-        importButton.on("click", async function () {
+        importButton.on("click", async function() {
             sbiUtils.log("Clicked import button");
 
             // TODO: let user define the folder that the actor goes into

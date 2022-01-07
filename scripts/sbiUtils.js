@@ -1,4 +1,6 @@
-import { sbiConfig } from "./sbiConfig.js";
+import {
+    sbiConfig
+} from "./sbiConfig.js";
 
 export class sbiUtils {
 
@@ -24,8 +26,7 @@ export class sbiUtils {
             // If this is the last item in the loop, assign the value
             if (i === length - 1) {
                 current[key] = val;
-            }
-            else {
+            } else {
                 // If the key doesn't exist, create it
                 if (!current[key]) {
                     current[key] = {};
@@ -81,7 +82,7 @@ export class sbiUtils {
             return null;
         }
 
-        return string.toLowerCase().replace(/^\w|\s\w/g, function (letter) {
+        return string.toLowerCase().replace(/^\w|\s\w/g, function(letter) {
             return letter.toUpperCase();
         })
     }
@@ -93,7 +94,7 @@ export class sbiUtils {
 
     // format("{0} comes before {1}", "a", "b") => "a comes before b"
     static format(stringToFormat, ...tokens) {
-        return stringToFormat.replace(/{(\d+)}/g, function (match, number) {
+        return stringToFormat.replace(/{(\d+)}/g, function(match, number) {
             return typeof tokens[number] != 'undefined' ? tokens[number] : match;
         });
     };

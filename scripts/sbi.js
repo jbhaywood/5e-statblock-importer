@@ -1,5 +1,9 @@
-import { sbiUtils } from "./sbiUtils.js";
-import { sbiWindow } from "./sbiWindow.js";
+import {
+    sbiUtils
+} from "./sbiUtils.js";
+import {
+    sbiWindow
+} from "./sbiWindow.js";
 
 Hooks.on("renderActorDirectory", (app, html, data) => {
     sbiUtils.log("Rendering sbi button");
