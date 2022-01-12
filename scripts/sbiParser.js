@@ -563,7 +563,13 @@ export class sbiParser {
 
                 if (match) {
                     const name = match.groups.name.toLowerCase();
-                    sbiUtils.assignToObject(actorData, `data.attributes.senses.${name}`, parseInt(match.groups.modifier));
+                    const modifier = parseInt(match.groups.modifier);
+
+                    sbiUtils.assignToObject(actorData, `data.attributes.senses.${name}`, modifier);
+
+                    if (name.toLowerCase() === "darkvision") {
+                        sbiUtils.assignToObject(actorData, `token.dimSight`, modifier);
+                    }
                 } else {
                     sbiUtils.assignToObject(actorData, "data.attributes.senses.special", sbiUtils.capitalizeAll(sense));
                 }
