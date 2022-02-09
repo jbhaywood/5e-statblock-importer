@@ -20,11 +20,11 @@ export class sbiParser {
     static #armorRegex = /^((armor|armour) class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( ?[\+|\-|−|–] ?\d+)?)\)/i;
     static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
-    static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/gi;
+    static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|\-|−|–]\d+)\)/g;
     static #abilitySavesRegex = /(?<name>\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b) (?<modifier>[\+|-]\d+)/ig;
     static #skillsRegex = /(?<name>\bacrobatics\b|\barcana\b|\banimal handling\b|\bathletics\b|\bdeception\b|\bhistory\b|\binsight\b|\bintimidation\b|\binvestigation\b|\bmedicine\b|\bnature\b|\bperception\b|\bperformance\b|\bpersuasion\b|\breligion\b|\bsleight of hand\b|\bstealth\b|\bsurvival\b) (?<modifier>[\+|-]\d+)/ig;
-    static #damageTypesRegex = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b |\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b|/ig;
+    static #damageTypesRegex = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b|\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b|/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
     static #challengeRegex = /^challenge (?<cr>(½|[\d/]+)) \((?<xp>[\d,]+)/i;
     static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
@@ -507,7 +507,7 @@ export class sbiParser {
             const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
             const damageTypes = [...foundLine.matchAll(this.#damageTypesRegex)]
                 .filter(arr => arr[0].length)
-                .map(arr => arr[0]);
+                .map(arr => arr[0].toLowerCase());
 
             let typeValue;
             switch (type) {
@@ -567,7 +567,7 @@ export class sbiParser {
 
                     sbiUtils.assignToObject(actorData, `data.attributes.senses.${name}`, modifier);
 
-                    if (name.toLowerCase() === "darkvision") {
+                    if (name === "darkvision") {
                         sbiUtils.assignToObject(actorData, `token.dimSight`, modifier);
                     }
                 } else {
