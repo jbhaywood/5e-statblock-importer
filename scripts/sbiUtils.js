@@ -55,18 +55,24 @@ export class sbiUtils {
         return result;
     }
 
-    static async tryGetFromPackAsync(packName, text) {
+    static async getImgFromPackItemAsync(itemName) {
         let result = null;
-        const pack = game.packs.get(packName);
-        const searchText = text.toLowerCase();
+        const lowerName = itemName.toLowerCase();
 
-        if (pack) {
-            const item = pack.index.find(e => text.includes(e.name.toLowerCase()));
+        // Get just the icon from the SRD item compendium, which should be installed.
+        // Don't the whole item because the one from the statblock may be different.
+        let packItem = await sbiUtils.getFromPackAsync("dnd5e.items", lowerName);
 
-            if (item) {
-                const itemDoc = await pack.getDocument(item._id);
-                result = itemDoc.toObject();
-            }
+        if (!packItem) {
+            packItem = await sbiUtils.getFromPackAsync("dnd5e.classfeatures", lowerName);
+        }
+
+        if (!packItem) {
+            packItem = await sbiUtils.getFromPackAsync("dnd5e.monsterfeatures", lowerName);
+        }
+
+        if (packItem) {
+            result = packItem.img;
         }
 
         return result;
@@ -82,7 +88,7 @@ export class sbiUtils {
             return null;
         }
 
-        return string.toLowerCase().replace(/^\w|\s\w/g, function(letter) {
+        return string.toLowerCase().replace(/^\w|\s\w/g, function (letter) {
             return letter.toUpperCase();
         })
     }
@@ -94,7 +100,7 @@ export class sbiUtils {
 
     // format("{0} comes before {1}", "a", "b") => "a comes before b"
     static format(stringToFormat, ...tokens) {
-        return stringToFormat.replace(/{(\d+)}/g, function(match, number) {
+        return stringToFormat.replace(/{(\d+)}/g, function (match, number) {
             return typeof tokens[number] != 'undefined' ? tokens[number] : match;
         });
     };

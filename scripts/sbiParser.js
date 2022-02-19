@@ -144,6 +144,7 @@ export class sbiParser {
             const itemData = {};
             itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
+            itemData.img = await sbiUtils.getImgFromPackItemAsync(lowerName);
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
             sbiUtils.assignToObject(itemData, "data.activation.type", "action");
@@ -158,8 +159,6 @@ export class sbiParser {
 
                 if (lowerName === "spellcasting") {
                     await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
-                } else if (lowerName === "illumination") {
-                    this.SetIllumination(description, item);
                 } else {
                     this.setAttack(description, itemData, actor);
                     this.setSavingThrow(description, itemData);
@@ -185,6 +184,7 @@ export class sbiParser {
             const itemData = {};
             itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
+            itemData.img = await sbiUtils.getImgFromPackItemAsync(lowerName);
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
             sbiUtils.assignToObject(itemData, "data.activation.cost", 1);
@@ -699,6 +699,7 @@ export class sbiParser {
             const itemData = {};
             itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
+            itemData.img = await sbiUtils.getImgFromPackItemAsync(lowerName);
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
 
@@ -888,7 +889,7 @@ export class sbiParser {
             // Some spell casting description bury the spell in the description, like Mehpits.
             // Example: The mephit can innately cast fog cloud, requiring no material components.
             // In that case search the description for every known spell.
-            const spell = await sbiUtils.tryGetFromPackAsync("dnd5e.spells", description);
+            const spell = await sbiUtils.getFromPackAsync("dnd5e.spells", description);
 
             if (spell) {
                 const perday = this.getGroupValue("perday", [...itemData.name.matchAll(this.#spellCastingRegex)]);
