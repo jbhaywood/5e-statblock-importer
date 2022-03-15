@@ -45,7 +45,11 @@ export class sbiWindow extends Application {
 
             // TODO: let user define the folder that the actor goes into
 
-            const lines = $("#sbi-input").val().trim().split(/\n/g);
+            const lines = $("#sbi-input")
+                .val()
+                .trim()
+                .split(/\n/g)
+                .filter(str => str.length);
 
             if (sbiConfig.options.debug) {
                 await sbiParser.parseInput(lines);

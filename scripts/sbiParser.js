@@ -54,8 +54,9 @@ export class sbiParser {
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
+                const nextLine = i < lines.length - 1 ? lines[i + 1] : null;
 
-                if (this.isLineIgnored(line)) {
+                if (this.isLineIgnored(line, nextLine)) {
                     continue;
                 }
 
@@ -71,10 +72,11 @@ export class sbiParser {
             const sections = {};
             let header = null;
 
-            for (const line of lines) {
-                const trimmedLine = line.trim();
+            for (let i = 0; i < lines.length; i++) {
+                const trimmedLine = lines[i].trim();
+                const nextLine = i < lines.length - 1 ? lines[i + 1] : null;
 
-                if (this.isLineIgnored(line)) {
+                if (this.isLineIgnored(trimmedLine, nextLine)) {
                     continue;
                 }
 
@@ -1111,13 +1113,17 @@ export class sbiParser {
     // Utilities
     // ===============================
 
-    static isLineIgnored(line) {
+    static isLineIgnored(line, nextLine) {
         const ignoreList = [
             "proficiency bonus",
             "traits"
         ]
 
-        return line.length == 0 || ignoreList.find(ignore => line.toLowerCase().startsWith(ignore)) != null;
+        const lowerLine = line.toLowerCase();
+
+        return line.length == 0 // empty line
+            || (nextLine != null && nextLine.toLowerCase().startsWith(lowerLine)) // duplicate line
+            || ignoreList.find(ignore => lowerLine.startsWith(ignore)) != null; // ignored line
     }
 
     static formatForDisplay(text) {
