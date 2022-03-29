@@ -13,9 +13,15 @@ class ActionDescription {
 }
 
 export class sbiParser {
-    // For action titles, the first word has to start with a capital letter, followed by 0-3 other words, ignoring prepositions,
-    // followed by a period. Support words with hyphens, non-capital first letter, and parentheses like '(Recharge 5-6)'.
-    static #actionTitleRegex = /^(([A-Z]\w+[ \-]?)(\s(of|and|the|from|in|at|on|with|to|by)\s)?(\w+ ?){0,3}(\([\w –\-\/]+\))?)\./;
+    // The action title regex is complicated. Here's the breakdown...
+    // ([A-Z][\w\d\-+_,;:'<>]+[\s\-]?)           <- Represents the first word of the title, followed by a space or hyphen. It has to start with a capital letter.
+    //                                              The word can include word characters, digits, and some punctuation characters.
+    // (of|and|the|from|in|at|on|with|to|by)\s)? <- Represents the prepostion words we want to ignore.
+    // ([\w\d\-+_,;:'<>]+\s?){0,3}               <- Represents the words that follow the first word, using the same regex for the allowed characters.
+    //                                              We assume the title only has 0-3 words following it, otherwise it's probably a sentence.
+    // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
+    static #actionTitleRegex = /^(([A-Z][\w\d\-+_,;:'<>]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by)\s)?([\w\d\-+_,;:'<>]+\s?){0,3}(\([\w –\-\/]+\))?)\./;
+
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)\s(?<type>\w+)([,|\s]+\((?<race>[\w|\s]+)\))?([,|\s]+(?<alignment>[\w|\s]+))?/i;
     static #armorRegex = /^((armor|armour) class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( ?[\+|\-|−|–] ?\d+)?)\)/i;
@@ -36,7 +42,7 @@ export class sbiParser {
     static #savingThrowRegex = /dc (?<savedc>\d+) (?<saveability>\w+) saving throw/i;
     static #versatileRegex = /\((?<damageroll>\d+d\d+( ?\+ ?\d+)?)\) (?<damagetype>\w+) damage if used with two hands/i;
     static #targetRegex = /(?<range>\d+)?-(foot|ft?.|'|’) (?<shape>\w+)/i;
-    static #damageRollsQuery = "(?<={0})[\\s\\w\\d,]+\\((?<damageroll1>\\d+d\\d+)( \\+ (?<damagemod1>\\d+))?\\) (?<damagetype1>\\w+)(.+plus.+\\((?<damageroll2>\\d+d\\d+( \\+ (?<damagemod2>\\d+))?)\\) (?<damagetype2>\\w+))?";
+    static #damageRollsQuery = "(?<={0})[\\s\\w\\d,]+\\((?<damageroll1>\\d+d\\d+)(\\s?\\+\\s?(?<damagemod1>\\d+))?\\) (?<damagetype1>\\w+)(.+plus.+\\((?<damageroll2>\\d+d\\d+(\\s?\\+\\s?(?<damagemod2>\\d+))?)\\) (?<damagetype2>\\w+))?";
 
     static async parseInput(lines) {
         if (lines.length) {
@@ -162,12 +168,12 @@ export class sbiParser {
                 if (lowerName === "spellcasting") {
                     await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
                 } else {
-                    this.setAttack(description, itemData, actor);
-                    this.setSavingThrow(description, itemData);
+                    this.setSavingThrow(description, itemData, actor);
                     this.setRecharge(name, itemData);
                     this.setTarget(description, itemData);
                     this.setReach(description, itemData);
                     this.setRange(description, itemData);
+                    this.setAttack(description, itemData, actor);
                 }
             }
 
@@ -186,7 +192,7 @@ export class sbiParser {
             const itemData = {};
             itemData.name = sbiUtils.capitalizeAll(name);
             itemData.type = "feat";
-            itemData.img = await sbiUtils.getImgFromPackItemAsync(lowerName);
+            itemData.img = await sbiUtils.getImgFromPackItemAsync(name);
 
             sbiUtils.assignToObject(itemData, "data.description.value", description);
             sbiUtils.assignToObject(itemData, "data.activation.cost", 1);
@@ -822,7 +828,7 @@ export class sbiParser {
         }
     }
 
-    // Example: Melee Weapon Attack: +8 to hit, reach 5 ft.,one target.
+    // Example: Melee Weapon Attack: +8 to hit, reach 5 ft., one target.
     static setAttack(text, itemData, actor) {
         const match = this.#attackRegex.exec(text);
 
@@ -831,7 +837,7 @@ export class sbiParser {
             sbiUtils.assignToObject(itemData, "data.weaponType", "natural");
             sbiUtils.assignToObject(itemData, "data.ability", actor.data.data.abilities.str.mod > actor.data.data.abilities.dex.mod ? "str" : "dex");
 
-            this.setDamageRolls(text, itemData, "hit:");
+            this.setDamageRolls(text, itemData, "hit:", actor);
         }
     }
 
@@ -949,7 +955,7 @@ export class sbiParser {
 
     // Example: Each creature in the cone must make a DC 13 Dexterity saving throw, taking 44 (8d10) 
     // cold damage on a failed save or half as much damage on a ssuccessful one.
-    static setSavingThrow(text, itemData) {
+    static setSavingThrow(text, itemData, actor) {
         const match = this.#savingThrowRegex.exec(text);
 
         if (match !== null) {
@@ -961,7 +967,7 @@ export class sbiParser {
             sbiUtils.assignToObject(itemData, "data.save.dc", parseInt(dc));
             sbiUtils.assignToObject(itemData, "data.save.scaling", "flat");
 
-            this.setDamageRolls(text, itemData, "saving throw");
+            this.setDamageRolls(text, itemData, "saving throw", actor);
         }
     }
 
@@ -1020,7 +1026,7 @@ export class sbiParser {
     // or
     // Frost Breath (Recharge 5–6). The hound exhales a 15-foot cone of frost. Each creature in the cone must make a DC 13 
     // Dexterity saving throw, taking 44(8d10) cold damage on a failed save or half as much damage on a successful one.
-    static setDamageRolls(text, itemData, lookup) {
+    static setDamageRolls(text, itemData, lookup, actor) {
         const regexQuery = sbiUtils.format(this.#damageRollsQuery, lookup);
         const regex = new RegExp(regexQuery, "i");
         const match = regex.exec(text);
@@ -1049,6 +1055,28 @@ export class sbiParser {
             if (damageParts.length) {
                 const currentParts = itemData.data.damage.parts ?? [];
                 itemData.data.damage.parts = currentParts.concat(damageParts);
+            }
+
+            // If the ability for the damage hasn't been set, try to find the correct 
+            // one to use so that it doesn't just default to Strength.
+            if (!itemData.data.ability) {
+                if (match.groups.damagemod1) {
+                    const damageMod = parseInt(match.groups.damagemod1);
+
+                    if (damageMod === actor.data.data.abilities.str.mod) {
+                        sbiUtils.assignToObject(itemData, "data.ability", "str");
+                    } else if (damageMod === actor.data.data.abilities.dex.mod) {
+                        sbiUtils.assignToObject(itemData, "data.ability", "dex");
+                    } else if (damageMod === actor.data.data.abilities.con.mod) {
+                        sbiUtils.assignToObject(itemData, "data.ability", "con");
+                    } else if (damageMod === actor.data.data.abilities.int.mod) {
+                        sbiUtils.assignToObject(itemData, "data.ability", "int");
+                    } else if (damageMod === actor.data.data.abilities.wis.mod) {
+                        sbiUtils.assignToObject(itemData, "data.ability", "wis");
+                    } else if (damageMod === actor.data.data.abilities.cha.mod) {
+                        sbiUtils.assignToObject(itemData, "data.ability", "cha");
+                    }
+                }
             }
         }
 
