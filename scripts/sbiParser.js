@@ -20,7 +20,7 @@ export class sbiParser {
     // ([\w\d\-+_,;:'<>]+\s?){0,3}               <- Represents the words that follow the first word, using the same regex for the allowed characters.
     //                                              We assume the title only has 0-3 words following it, otherwise it's probably a sentence.
     // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
-    static #actionTitleRegex = /^(([A-Z][\w\d\-+_,;:'<>]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by)\s)?([\w\d\-+_,;:'<>]+\s?){0,3}(\([\w –\-\/]+\))?)\./;
+    static #actionTitleRegex = /^(([A-Z][\w\d\-+_,;:'<>]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+_,;:'<>]+\s?){0,3}(\(.+\))?)\./;
 
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)\s(?<type>\w+)([,|\s]+\((?<race>[\w|\s]+)\))?([,|\s]+(?<alignment>[\w|\s]+))?/i;
     static #armorRegex = /^((armor|armour) class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
@@ -33,8 +33,11 @@ export class sbiParser {
     static #damageTypesRegex = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b|\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b|/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
     static #challengeRegex = /^challenge (?<cr>(½|[\d/]+)) \((?<xp>[\d,]+)/i;
-    static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability>\w+)|spell save dc (?<savedc>\d+)/ig;
+    static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability1>\w+)|(?<ability2>\w+) as the spellcasting ability|spell save dc (?<savedc>\d+)/ig;
     static #spellLevelRegex = /(?<level>\d+)(.+)level spellcaster/i;
+    static #spellLineRegex = /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig;
+    static #spellInnateLineRegex = /at will:|\d\/day( each)?:/ig;
+    static #spellInnateSingle = /innately cast (?<spellname>[\w|\s]+)(\s\(.+\))?,/i
     static #attackRegex = /(attack|damage): \+(?<tohit>\d+) to hit/i;
     static #reachRegex = /reach (?<reach>\d+) ?(ft|'|’)/i;
     static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ?(ft|'|’)/i;
@@ -51,6 +54,7 @@ export class sbiParser {
                 "bonus actions",
                 "reactions",
                 "legendary actions",
+                "mythic actions",
                 "lair actions",
                 "regional effects"
             ];
@@ -281,7 +285,7 @@ export class sbiParser {
                     const armorNames = armorType.split(",").map(str => str.trim());
 
                     for (const armorName of armorNames) {
-                        const item = await sbiUtils.getFromPackAsync("dnd5e.items", armorName);
+                        const item = await sbiUtils.getItemFromPacksAsync(armorName);
 
                         if (item) {
                             item.data.equipped = true;
@@ -576,7 +580,7 @@ export class sbiParser {
                     sbiUtils.assignToObject(actorData, `data.attributes.senses.${name}`, modifier);
 
                     if (name === "darkvision") {
-                        sbiUtils.assignToObject(actorData, `token.dimSight`, modifier);
+                        sbiUtils.assignToObject(actorData, "token.dimSight", modifier);
                     }
                 } else {
                     sbiUtils.assignToObject(actorData, "data.attributes.senses.special", sbiUtils.capitalizeAll(sense));
@@ -648,7 +652,23 @@ export class sbiParser {
 
         if (line != null) {
             const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
-            const values = foundLine.split(",").map(str => this.convertLanguage(str));
+            let modLine = foundLine;
+
+            // Replace the comman in numbers, like 1,000, so that we can ignore it when gathering the languages.
+            for (let index = 0; index < foundLine.length; index++) {
+                if (index > 0 && index < foundLine.length - 1) {
+                    const curLetter = foundLine[index];
+                    const lastLetter = foundLine[index - 1];
+                    const nextLetter = foundLine[index + 1];
+
+                    if (curLetter === "," && !isNaN(Number(lastLetter) && !isNaN(nextLetter))) {
+                        modLine = sbiUtils.replaceAt(foundLine, index, "!");
+                    }
+                }
+            }
+
+            // Gather languages here by splitting on commas.
+            const values = modLine.split(",").map(str => this.convertLanguage(str));
             const knownValues = sbiUtils.intersect(values, knownLanguages);
             const unknownValues = sbiUtils.except(values, knownValues).map(str => sbiUtils.capitalizeFirstLetter(str));
 
@@ -718,7 +738,7 @@ export class sbiParser {
                 // At will: dancing lights, detect magic, invisibility 
                 // 3/day: charm person, faerie fire, mage armor 
                 // 1/day: spike growth
-                await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
+                await this.setSpellcastingAsync(description, itemData, actor, this.#spellInnateLineRegex);
             } else if (lowerName === "spellcasting") {
                 // Example:
                 // Spellcasting. The sphinx is a 9th-­‐level spellcaster. Its spellcasting ability is Intelligence (spell save DC 16, +8
@@ -730,7 +750,7 @@ export class sbiParser {
                 // 3rd level (3 slots): dispel magic, remove curse, tongues
                 // 4th level (3 slots): banishment, greater invisibility
                 // 5th level (1 slot): legend lore
-                await this.setSpellcastingAsync(description, itemData, actor, /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig);
+                await this.setSpellcastingAsync(description, itemData, actor, this.#spellLineRegex);
             } else if (lowerName.startsWith("legendary resistance")) {
                 // Example:
                 // Legendary Resistance (3/day)
@@ -864,7 +884,7 @@ export class sbiParser {
                     .slice(match.index, lastIndex)
                     .slice(match[0].length)
                     .split(",")
-                    .map(spell => sbiUtils.capitalizeAll(spell.trim()));
+                    .map(spell => sbiUtils.capitalizeAll(sbiUtils.trimStringEnd(spell, ".").trim()));
 
                 featureDescription.push(`<p><b>${match[0]}</b> ${spellNames.join(", ")}</p>`);
                 lastIndex = match.index;
@@ -896,22 +916,29 @@ export class sbiParser {
         } else {
             // Some spell casting description bury the spell in the description, like Mehpits.
             // Example: The mephit can innately cast fog cloud, requiring no material components.
-            // In that case search the description for every known spell.
-            const spell = await sbiUtils.getFromPackAsync("dnd5e.spells", description);
+            var match = this.#spellInnateSingle.exec(description);
 
-            if (spell) {
-                const perday = this.getGroupValue("perday", [...itemData.name.matchAll(this.#spellCastingRegex)]);
+            if (match) {
+                const spell = await sbiUtils.getItemFromPacksAsync(match.groups.spellname);
 
-                spellDatas.push({
-                    "name": spell.name,
-                    "type": "innate",
-                    "count": parseInt(perday)
-                });
+                if (spell) {
+                    const perday = this.getGroupValue("perday", [...itemData.name.matchAll(this.#spellCastingRegex)]);
+
+                    spellDatas.push({
+                        "name": spell.name,
+                        "type": "innate",
+                        "count": parseInt(perday)
+                    });
+                }
             }
         }
 
-        // Set the spellcasting ability.
-        const spellcastingAbility = this.getGroupValue("ability", [...description.matchAll(this.#spellCastingRegex)]);
+        // Set spellcasting ability.
+        let spellcastingAbility = this.getGroupValue("ability1", [...description.matchAll(this.#spellCastingRegex)]);
+
+        if (spellcastingAbility == null) {
+            spellcastingAbility = this.getGroupValue("ability2", [...description.matchAll(this.#spellCastingRegex)]);
+        }
 
         if (spellcastingAbility != null) {
             const actorData = sbiUtils.assignToObject({}, "data.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility));
@@ -921,7 +948,7 @@ export class sbiParser {
         // Add spells to actor.
         if (spellDatas.length) {
             for (const spellData of spellDatas) {
-                const spell = await sbiUtils.getFromPackAsync("dnd5e.spells", spellData.name);
+                const spell = await sbiUtils.getItemFromPacksAsync(spellData.name);
 
                 if (spell) {
                     if (spellData.type == "slots") {
@@ -935,15 +962,15 @@ export class sbiParser {
                     } else if (spellData.type = "innate") {
                         // Separate the 'per day' spells from the 'at will' spells.
                         if (spellData.count) {
-                            sbiUtils.assignToObject(spell, `data.uses.value`, spellData.count);
-                            sbiUtils.assignToObject(spell, `data.uses.max`, spellData.count);
-                            sbiUtils.assignToObject(spell, `data.uses.per`, "day");
-                            sbiUtils.assignToObject(spell, `data.preparation.mode`, "innate");
+                            sbiUtils.assignToObject(spell, "data.uses.value", spellData.count);
+                            sbiUtils.assignToObject(spell, "data.uses.max", spellData.count);
+                            sbiUtils.assignToObject(spell, "data.uses.per", "day");
+                            sbiUtils.assignToObject(spell, "data.preparation.mode", "innate");
                         } else {
-                            sbiUtils.assignToObject(spell, `data.preparation.mode`, "atwill");
+                            sbiUtils.assignToObject(spell, "data.preparation.mode", "atwill");
                         }
 
-                        sbiUtils.assignToObject(spell, `data.preparation.prepared`, true);
+                        sbiUtils.assignToObject(spell, "data.preparation.prepared", true);
                     }
 
                     // Add the spell to the character sheet.
@@ -1091,43 +1118,79 @@ export class sbiParser {
         }
     }
 
-    // Combines lines of text into sentences and paragraphs.
+    // Combines lines of text into sentences and paragraphs. This is complicated because finding 
+    // sentences that can span multiple lines are hard to describe to a computer.
     static getActionDescriptions(lines) {
         const result = [];
         let actionDescription = null;
-        let foundSentenceEnd = true;
-        let foundSpellBlock = true;
+        let foundTitle = false;
 
-        for (const line of lines) {
-            const match = this.#actionTitleRegex.exec(line);
-            const foundSpellSaveLine = line.toLowerCase().includes("(spell save");
+        // Pull out the entire spell block because it's formatted differently than all the other action blocks.
+        const notSpellLines = [];
+        const spellLines = [];
+        let startedSpellTitleBlock = false;
+        let startedSpellSpellsBlock = false;
 
-            if (match && (foundSentenceEnd || (foundSpellBlock && !foundSpellSaveLine))) {
-                actionDescription = new ActionDescription(
-                    match[match.index].replace(".", ""),
-                    line.slice(match[match.index].length).trim());
+        // Start taking lines from the spell block when we've found the beginning until 
+        // we've gotten into the spells and hit a line where the next line has a period.
+        for (let index = 0; index < lines.length; index++) {
+            const line = lines[index];
 
-                result.push(actionDescription);
-            } else if (actionDescription == null) {
-                actionDescription = new ActionDescription("Description", line);
+            if (!startedSpellTitleBlock) {
+                startedSpellTitleBlock = line.match(/\binnate spellcasting\b|\bspellcasting\b/i) != null;
+            }
+
+            const isSpellLine = this.#spellLineRegex.exec(line) || this.#spellInnateLineRegex.exec(line);
+
+            // We found the first line with spells in it, so stop tracking the title block
+            // and start tracking the spells block.
+            if (startedSpellTitleBlock && isSpellLine) {
+                startedSpellTitleBlock = false;
+                startedSpellSpellsBlock = true;
+            }
+
+            // If we're inside of a spell block, store it off in the spell lines array,
+            // otherwise store it into the not spell lines array.
+            if (startedSpellTitleBlock || startedSpellSpellsBlock) {
+                spellLines.push(line);
+            } else {
+                startedSpellSpellsBlock = false;
+                notSpellLines.push(line);
+            }
+
+            // Check to see if we've reached the end of the spell block by seeing if 
+            // the next line has a period. If it does, that means it's the title of 
+            // a new action block.
+            const nextLineIsNotSpellLine = index < lines.length - 2 && lines[index + 1].includes(".");
+
+            if (startedSpellSpellsBlock && nextLineIsNotSpellLine) {
+                startedSpellSpellsBlock = false;
+            }
+        }
+
+        const sentences = sbiUtils.makeSentences(spellLines).concat(sbiUtils.makeSentences(notSpellLines));
+
+        for (const sentence of sentences) {
+            const match = this.#actionTitleRegex.exec(sentence);
+
+            if (match && !foundTitle) {
+                // Ignore two titles in a row because it means that the second one is just a short description and not a real title.
+                foundTitle = true;
+                actionDescription = new ActionDescription(sbiUtils.trimStringEnd(sentence, "."));
 
                 result.push(actionDescription);
             } else {
-                if (actionDescription.description == null) {
-                    actionDescription.description = line;
+                foundTitle = false;
+
+                if (actionDescription == null) {
+                    actionDescription = new ActionDescription("Description", sentence);
+                    result.push(actionDescription);
+                } else if (actionDescription.description == null) {
+                    actionDescription.description = sentence;
                 } else {
-                    actionDescription.description = `${actionDescription.description} ${line}`;
+                    actionDescription.description = `${actionDescription.description} ${sentence}`;
                 }
             }
-
-            // We want to track the current line before going on to the next so that we can tell if a 
-            // match on the next action title is valid. We know it's a new block if the previous sentence 
-            // ends with a period, meaning we didn't accidentally find text that looks like a title in 
-            // the middle of a block, or if the new title is coming after an Innate Spellcasting or 
-            // Spellcasting block. We need to test for the spellcasting blocks specially because they 
-            // don't use periods at the ends of their spell lists.
-            foundSentenceEnd = line.trimEnd().endsWith(".")
-            foundSpellBlock = actionDescription.name.match(/\binnate spellcasting\b|\bspellcasting\b/i) != null;
         }
 
         for (const actionDescription of result) {
@@ -1229,7 +1292,8 @@ export class sbiParser {
     }
 
     static convertLanguage(language) {
-        let result = language.trim().toLowerCase();
+        // We replaced commas in numbers, like 1,000, with a "!" ealier, so put the comman back now.
+        let result = language.trim().toLowerCase().replace("!", ",");
 
         switch (result) {
             case "deep speech":

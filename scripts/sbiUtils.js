@@ -39,40 +39,41 @@ export class sbiUtils {
         return obj;
     }
 
-    static async getFromPackAsync(packName, itemName) {
+    // Search all compendiums and get just the icon from the item, if found.
+    // Don't get the whole item because the one from the statblock may be different.
+    static async getImgFromPackItemAsync(itemName) {
         let result = null;
-        const pack = game.packs.get(packName);
+        const item = await this.getItemFromPacksAsync(itemName);
 
-        if (pack) {
-            const item = pack.index.find(e => itemName.toLowerCase() === e.name.toLowerCase());
+        if (item) {
+            result = item.img;
+        }
 
-            if (item) {
-                const itemDoc = await pack.getDocument(item._id);
-                result = itemDoc.toObject();
+        return result;
+    }
+
+    static async getItemFromPacksAsync(itemName) {
+        let result = null;
+
+        for (const pack of game.packs) {
+            result = await this.getItemFromPackAsync(pack, itemName);
+
+            if (result) {
+                break;
             }
         }
 
         return result;
     }
 
-    static async getImgFromPackItemAsync(itemName) {
+    static async getItemFromPackAsync(pack, itemName) {
         let result = null;
         const lowerName = itemName.toLowerCase();
+        const item = pack.index.find(e => lowerName === e.name.toLowerCase());
 
-        // Get just the icon from the SRD item compendium, which should be installed.
-        // Don't the whole item because the one from the statblock may be different.
-        let packItem = await sbiUtils.getFromPackAsync("dnd5e.items", lowerName);
-
-        if (!packItem) {
-            packItem = await sbiUtils.getFromPackAsync("dnd5e.classfeatures", lowerName);
-        }
-
-        if (!packItem) {
-            packItem = await sbiUtils.getFromPackAsync("dnd5e.monsterfeatures", lowerName);
-        }
-
-        if (packItem) {
-            result = packItem.img;
+        if (item) {
+            const itemDoc = await pack.getDocument(item._id);
+            result = itemDoc.toObject();
         }
 
         return result;
@@ -88,7 +89,7 @@ export class sbiUtils {
             return null;
         }
 
-        return string.toLowerCase().replace(/^\w|\s\w/g, function (letter) {
+        return string.toLowerCase().replace(/^\w|\s\w|\(\w/g, function (letter) {
             return letter.toUpperCase();
         })
     }
@@ -127,6 +128,25 @@ export class sbiUtils {
     static exactMatch(string, regex) {
         const match = string.match(regex);
         return match && match[0] === string;
+    }
+
+    static replaceAt(string, index, char) {
+        if (index > string.length - 1) return string;
+        return string.substring(0, index) + char + string.substring(index + 1);
+    }
+
+    static trimStringEnd(string, trimString) {
+        let result = string;
+
+        if (string.endsWith(trimString)) {
+            result = string.substr(0, string.length - trimString.length);
+        }
+
+        return result;
+    }
+
+    static makeSentences(strings) {
+        return strings.join(" ").replace("  ", " ").split(".").filter(str => str).map(str => str.trim(" ") + ".");
     }
 
     // ==========================
