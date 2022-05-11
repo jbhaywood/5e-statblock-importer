@@ -22,7 +22,7 @@ export class sbiParser {
     // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
     static #actionTitleRegex = /^(([A-Z][\w\d\-+_,;:'<>]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+_,;:'<>]+\s?){0,3}(\(.+\))?)\./;
 
-    static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)\s(?<type>\w+)([,|\s]+\((?<race>[\w|\s]+)\))?([,|\s]+(?<alignment>[\w|\s]+))?/i;
+    static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)\s(?<type>\w+)([,|\s]+\((?<race>[,|\w|\s]+)\))?([,|\s]+(?<alignment>[\w|\s]+))?/i;
     static #armorRegex = /^((armor|armour) class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( ?[\+|\-|−|–] ?\d+)?)\)/i;
     static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
