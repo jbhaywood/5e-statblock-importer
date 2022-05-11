@@ -41,9 +41,9 @@ export class sbiUtils {
 
     // Search all compendiums and get just the icon from the item, if found.
     // Don't get the whole item because the one from the statblock may be different.
-    static async getImgFromPackItemAsync(itemName) {
+    static async getImgFromPackItemAsync(itemName, type) {
         let result = null;
-        const item = await this.getItemFromPacksAsync(itemName);
+        const item = await this.getItemFromPacksAsync(itemName, type);
 
         if (item) {
             result = item.img;
@@ -52,13 +52,13 @@ export class sbiUtils {
         return result;
     }
 
-    static async getItemFromPacksAsync(itemName) {
+    static async getItemFromPacksAsync(itemName, type) {
         let result = null;
 
         for (const pack of game.packs) {
             result = await this.getItemFromPackAsync(pack, itemName);
 
-            if (result) {
+            if (result && (!type || result.type === type)) {
                 break;
             }
         }

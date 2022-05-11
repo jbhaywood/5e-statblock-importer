@@ -164,8 +164,10 @@ export class sbiParser {
 
             // The "Multiattack" action isn't a real action, so there's nothing more to add to it.
             if (lowerName !== "multiattack") {
+                // We'll assume that an NPC with stuff will have that stuff identified, equipped, attuned, etc.
                 sbiUtils.assignToObject(itemData, "data.identified", true);
                 sbiUtils.assignToObject(itemData, "data.equipped", true);
+                sbiUtils.assignToObject(itemData, "data.attunement", 2);
                 sbiUtils.assignToObject(itemData, "data.proficient", true);
                 sbiUtils.assignToObject(itemData, "data.quantity", 1);
 
@@ -285,11 +287,12 @@ export class sbiParser {
                     const armorNames = armorType.split(",").map(str => str.trim());
 
                     for (const armorName of armorNames) {
-                        const item = await sbiUtils.getItemFromPacksAsync(armorName);
+                        const item = await sbiUtils.getItemFromPacksAsync(armorName, "equipment");
 
                         if (item) {
                             item.data.equipped = true;
                             item.data.proficient = true;
+                            item.data.attunement = 2;
 
                             await actor.createEmbeddedDocuments("Item", [item]);
 
@@ -883,8 +886,9 @@ export class sbiParser {
                 const spellNames = description
                     .slice(match.index, lastIndex)
                     .slice(match[0].length)
-                    .split(",")
-                    .map(spell => sbiUtils.capitalizeAll(sbiUtils.trimStringEnd(spell, ".").trim()));
+                    .split(/,(?![^\(]*\))/) // split on commas that are outside of parenthesis
+                    .map(spell => sbiUtils.trimStringEnd(spell, ".")) // remove end period
+                    .map(spell => sbiUtils.capitalizeAll(spell)); // capitalize words
 
                 featureDescription.push(`<p><b>${match[0]}</b> ${spellNames.join(", ")}</p>`);
                 lastIndex = match.index;
@@ -919,7 +923,7 @@ export class sbiParser {
             var match = this.#spellInnateSingle.exec(description);
 
             if (match) {
-                const spell = await sbiUtils.getItemFromPacksAsync(match.groups.spellname);
+                const spell = await sbiUtils.getItemFromPacksAsync(match.groups.spellname, "spell");
 
                 if (spell) {
                     const perday = this.getGroupValue("perday", [...itemData.name.matchAll(this.#spellCastingRegex)]);
@@ -948,7 +952,7 @@ export class sbiParser {
         // Add spells to actor.
         if (spellDatas.length) {
             for (const spellData of spellDatas) {
-                const spell = await sbiUtils.getItemFromPacksAsync(spellData.name);
+                const spell = await sbiUtils.getItemFromPacksAsync(spellData.name, "spell");
 
                 if (spell) {
                     if (spellData.type == "slots") {
@@ -973,8 +977,10 @@ export class sbiParser {
                         sbiUtils.assignToObject(spell, "data.preparation.prepared", true);
                     }
 
-                    // Add the spell to the character sheet.
-                    await actor.createEmbeddedDocuments("Item", [spell]);
+                    // Add the spell to the character sheet if it doesn't exist already.
+                    if (!actor.items.getName(spell.name)) {
+                        await actor.createEmbeddedDocuments("Item", [spell]);
+                    }
                 }
             }
         }
@@ -1164,6 +1170,8 @@ export class sbiParser {
             const nextLineIsNotSpellLine = index < lines.length - 2 && lines[index + 1].includes(".");
 
             if (startedSpellSpellsBlock && nextLineIsNotSpellLine) {
+                // Add a period at the end so that sections are extracted correctly.
+                spellLines[spellLines.length - 1] = spellLines[spellLines.length - 1] + ".";
                 startedSpellSpellsBlock = false;
             }
         }
@@ -1194,7 +1202,7 @@ export class sbiParser {
         }
 
         for (const actionDescription of result) {
-            actionDescription.description = this.formatForDisplay(actionDescription.description);
+            actionDescription.description = this.formatForDisplay(actionDescription.description.replace("^", ""));
         }
 
         return result;
