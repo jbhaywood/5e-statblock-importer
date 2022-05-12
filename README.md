@@ -1,6 +1,6 @@
 ![Foundry Version](https://img.shields.io/github/v/release/jbhaywood/5e-statblock-importer)
-[![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2F5e-statblock-importer&colorB=blueviolet)](https://forge-vtt.com/bazaar#package=5e-statblock-importer)
-[![License](https://img.shields.io/github/license/jbhaywood/5e-statblock-importer)](LICENSE)
+![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2F5e-statblock-importer&colorB=blueviolet)](https://forge-vtt.com/bazaar#package=5e-statblock-importer)
+![License](https://img.shields.io/github/license/jbhaywood/5e-statblock-importer)](LICENSE)
 
 # 5e-statblock-importer
 A module for the FoundryVTT **DND5e - Fifth Edition System**. Easily import 5e monster and NPC statblocks into your game. As long as it's formatted using the standard WotC layout, it'll create a new actor with an NPC character sheet using those stats.
