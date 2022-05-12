@@ -1,3 +1,4 @@
+[![Foundry Version](https://img.shields.io/endpoint?url=https://foundryshields.com/version?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjbhaywood%2F5e-statblock-importe%2Fmain%2Fmodule.json)
 [![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2F5e-statblock-importer&colorB=blueviolet)](https://forge-vtt.com/bazaar#package=5e-statblock-importer)
 [![License](https://img.shields.io/github/license/jbhaywood/5e-statblock-importer)](LICENSE)
 
