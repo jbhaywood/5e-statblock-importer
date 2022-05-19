@@ -380,14 +380,14 @@ export class sbiParser {
                         "attributes": {
                             "speed": {
                                 "special": otherSpeeds
-                                    .map(obj => `${sbiUtils.capitalizeAll(obj.name)} ${obj.value} ft.`)
+                                    .map(obj => `${sbiUtils.capitalizeAll(obj.name)} ${obj.value} ft`)
                                     .join(", ")
                             },
                             "movement": {
-                                "burrow": otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("burrow"))?.value.concat(" ft."),
-                                "climb": otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("climb"))?.value.concat(" ft."),
-                                "fly": otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("fly"))?.value.concat(" ft."),
-                                "swim": otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("swim"))?.value.concat(" ft."),
+                                "burrow": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("burrow"))?.value),
+                                "climb": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("climb"))?.value),
+                                "fly": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("fly"))?.value),
+                                "swim": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("swim"))?.value),
                                 "hover": speedLine.toLowerCase().includes("hover")
                             }
                         }
