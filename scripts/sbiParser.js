@@ -1068,18 +1068,22 @@ export class sbiParser {
         if (match !== null) {
             const damageRoll = match.groups.damageroll1;
             const damageType = match.groups.damagetype1;
+            const hasDamageMod = match.groups.damagemod1 != undefined;
             const plusDamageRoll = match.groups.damageroll2;
             const plusDamageType = match.groups.damagetype2;
+            const plusHasDamageMod = match.groups.damagemod2 != undefined;
 
             // Set the damage rolls and types. I've never seen more that two damage rolls for one attack.
             const damageParts = [];
 
             if (damageRoll && damageType) {
-                damageParts.push([`${damageRoll} + @mod`, damageType]);
+                var modText = hasDamageMod ? " + @mod" : "";
+                damageParts.push([`${damageRoll}${modText}`, damageType]);
             }
 
             if (plusDamageRoll && plusDamageType) {
-                damageParts.push([`${plusDamageRoll} + @mod`, plusDamageType]);
+                var modText = plusHasDamageMod ? " + @mod" : "";
+                damageParts.push([`${plusDamageRoll}${modText}`, plusDamageType]);
             }
 
             if (itemData.data.damage === undefined) {
