@@ -1,4 +1,4 @@
-import {
+   import {
     sbiUtils
 } from "./sbiUtils.js";
 
@@ -22,36 +22,45 @@ export class sbiParser {
     //                                              We assume the title only has 0-3 words following it, otherwise it's probably a sentence.
     // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
     static #actionTitleRegex = /^(([A-Z][\w\d\-+,;']+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\(.+\))?)\./;
-
-    static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (tiny|small))?\s(?<type>\w+)([,|\s]+\((?<race>[,|\w|\s]+)\))?([,|\s]+(?<alignment>[\w|\s]+))?/i;
-    static #armorRegex = /^((armor|armour) class) (?<ac>\d+)( \((?<armortype>.+)\))?/i;
-    static #healthRegex = /^(hit points) (?<hp>\d+) \((?<formula>\d+d\d+( ?[\+|\-|−|–] ?\d+)?)\)/i;
-    static #speedRegex = /(?<name>\w+) (?<value>\d+)/ig;
+    static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (tiny|small))?\s(?<type>\w+)([,\s]+\((?<race>[,\w\s]+)\))?([,\s]+(?<alignment>[\w\s\-]+))?/i;
+    static #armorRegex = /^((armor|armour) class)\s?(?<ac>\d+)( \((?<armortype>.+)\))?/i;
+    static #healthRegex = /^(hit points)\s?(?<hp>\d+)\s?\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\)/i;
+    static #speedRegex = /(?<name>\w+)\s?(?<value>\d+)/ig;
     static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
-    static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+|\-|−|–]\d+)\)/g;
+    static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+\-−–]\d+)\)/g;
     static #abilitySavesRegex = /(?<name>\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b) (?<modifier>[\+|-]\d+)/ig;
     static #skillsRegex = /(?<name>\bacrobatics\b|\barcana\b|\banimal handling\b|\bathletics\b|\bdeception\b|\bhistory\b|\binsight\b|\bintimidation\b|\binvestigation\b|\bmedicine\b|\bnature\b|\bperception\b|\bperformance\b|\bpersuasion\b|\breligion\b|\bsleight of hand\b|\bstealth\b|\bsurvival\b) (?<modifier>[\+|-]\d+)/ig;
-    static #damageTypesRegex = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b|\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b|/ig;
+    static #damageTypesRegex = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b|\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b/ig;
+    static #conditionTypesRegex = /\bblinded\b|\bcharmed\b|\bdeafened\b|\bdiseased\b|\bexhaustion\b|\bfrightened\b|\bgrappled\b|\bincapacitated\b|\binvisible\b|\bparalyzed\b|\bpetrified\b|\bpoisoned\b|\bprone\b|\brestrained\b|\bstunned\b|\bunconscious\b/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
-    static #challengeRegex = /^challenge (?<cr>(½|[\d/]+)) \((?<xp>[\d,]+)/i;
+    static #challengeRegex = /^challenge\s?(?<cr>(½|[\d/]+)) \((?<xp>[\d,]+)/i;
     static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability1>\w+)|(?<ability2>\w+) as the spellcasting ability|spell save dc (?<savedc>\d+)/ig;
     static #spellLevelRegex = /(?<level>\d+)(.+)level spellcaster/i;
-    static #spellLineRegex = /(cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th) .+?:/ig;
+    static #spellLineRegex = /(at-will|cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th)[\w\d\s\(\)-]*:/ig;
     static #spellInnateLineRegex = /at will:|\d\/day( each)?:/ig;
     static #spellInnateSingle = /innately cast (?<spellname>[\w|\s]+)(\s\(.+\))?,/i
-    static #attackRegex = /(attack|damage): \+(?<tohit>\d+) to hit/i;
+    static #attackRegex = /\+(?<tohit>\d+) to hit/i;
     static #reachRegex = /reach (?<reach>\d+) ?(ft|'|’)/i;
     static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ?(ft|'|’)/i;
     static #rechargeRegex = /\(recharge (?<recharge>\d+)([–|-]\d+)?\)/i;
-    static #savingThrowRegex = /dc (?<savedc>\d+) (?<saveability>\w+) saving throw/i;
+    static #savingThrowRegex = /must (make|succeed on) a dc (?<savedc>\d+) (?<saveability>\w+) (?<savetext>saving throw|save)/i;
     static #versatileRegex = /\((?<damageroll>\d+d\d+( ?\+ ?\d+)?)\) (?<damagetype>\w+) damage if used with two hands/i;
     static #targetRegex = /(?<range>\d+)?-(foot|ft?.|'|’) (?<shape>\w+)/i;
-    static #damageRollsQuery = "(?<={0})[\\s\\w\\d,]+\\((?<damageroll1>\\d+d\\d+)(\\s?\\+\\s?(?<damagemod1>\\d+))?\\) (?<damagetype1>\\w+)(.+plus.+\\((?<damageroll2>\\d+d\\d+(\\s?\\+\\s?(?<damagemod2>\\d+))?)\\) (?<damagetype2>\\w+))?";
+    static #damageRollRegex = /\(?(?<damageroll1>\d+d\d+)(\s?\+\s?(?<damagemod1>\d+))?\)? (?<damagetype1>\w+)(.+(plus|and).+\(?(?<damageroll2>\d+d\d+(\s?\+\s?(?<damagemod2>\d+))?)\)? (?<damagetype2>\w+))?/i;
+
+    // Regexes for old school stat blocks
+    static #isOsrRegex = /^HP[\s\d]*;\sAC[\s\d]*;/;
+    static #osrHealthRegex = /HP (?<hp>\d+);/;
+    static #osrArmorRegex = /AC (?<ac>\d+)( \((?<armortype>.+)\))?;/;
+    static #osrChallengeRegex = /CR (?<cr>[\d/]+); XP (?<xp>[\d,]+)/;
+    static #osrSpeedRegex = /Speed[\s\d\w’,]+;/;
+    static #osrReachRegex = /(?<reach>\d+)’ reach/;
 
     static async parseInput(lines) {
         if (lines.length) {
             const sectionHeaders = [
                 "actions",
+                "traits",
                 "bonus actions",
                 "reactions",
                 "legendary actions",
@@ -60,12 +69,16 @@ export class sbiParser {
                 "regional effects"
             ];
 
-            // Save off all the lines that preceed the first of the above sections.
+            // Save off all the lines that precede the first of the above sections.
             const storedLines = [];
+            let isOsr = false;
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
                 const nextLine = i < lines.length - 1 ? lines[i + 1] : null;
+
+                // We need to know if this is an OSR style statblock to make some of the parsing easier.
+                isOsr = isOsr || this.#isOsrRegex.exec(line) != null;
 
                 if (this.isLineIgnored(line, nextLine)) {
                     continue;
@@ -118,24 +131,23 @@ export class sbiParser {
             const skillData = await this.setSkillsAsync(storedLines, actor);
             await this.setDamagesAsync(storedLines, actor, "resistances");
             await this.setDamagesAsync(storedLines, actor, "immunities");
-            this.setConditionImmunities(storedLines, actor);
-            this.setDamageVulnerabilities(storedLines, actor);
+            this.setDamageVulnerabilities(storedLines, actor, isOsr);
             await this.setSensesAsync(storedLines, actor);
             await this.setLanguagesAsync(storedLines, actor);
             await this.setChallengeAsync(storedLines, actor);
-            await this.setFeaturesAsync(storedLines, actor);
+            await this.setFeaturesAsync(storedLines, actor, isOsr);
             await this.fixupSkillValues(actor, skillData);
 
             // Add the sections to the character actor.
             Object.entries(sections).forEach(async ([key, value]) => {
                 const sectionHeader = sbiUtils.capitalizeAll(key);
 
-                if (key === "actions") {
+                if (key === "actions" || key === "traits") {
                     await this.setActionsAsync(value, actor);
                 } else if (key === "reactions" || key === "bonus actions") {
                     await this.setAlternateActionAsync(value, key, actor);
                 } else {
-                    // Anything that isn't an action, reaction, or bonus action is a
+                    // Anything that isn't an action, trait, reaction, or bonus action is a
                     // "major" action, which are legendary actions and lair actions.
                     await this.setMajorActionAsync(sectionHeader, value, actor);
                 }
@@ -175,12 +187,11 @@ export class sbiParser {
                 if (lowerName === "spellcasting") {
                     await this.setSpellcastingAsync(description, itemData, actor, /at will:|\d\/day( each)?:/ig);
                 } else {
-                    this.setSavingThrow(description, itemData, actor);
                     this.setRecharge(name, itemData);
                     this.setTarget(description, itemData);
                     this.setReach(description, itemData);
                     this.setRange(description, itemData);
-                    this.setAttack(description, itemData, actor);
+                    this.setAttackOrSave(description, itemData, actor);
                 }
             }
 
@@ -267,7 +278,7 @@ export class sbiParser {
             .map(line => {
                 return {
                     "line": line,
-                    "match": this.#armorRegex.exec(line)
+                    "match": this.#osrArmorRegex.exec(line) ?? this.#armorRegex.exec(line)
                 }
             })
             .find(obj => obj.match);
@@ -309,7 +320,7 @@ export class sbiParser {
             }
 
             await actor.update(armorData);
-            sbiUtils.remove(lines, matchObj.line);
+            this.updateLines(lines, matchObj, this.#osrArmorRegex);
         }
     }
 
@@ -318,7 +329,7 @@ export class sbiParser {
             .map(line => {
                 return {
                     "line": line,
-                    "match": this.#healthRegex.exec(line)
+                    "match": this.#osrHealthRegex.exec(line) ?? this.#healthRegex.exec(line)
                 }
             })
             .find(obj => obj.match);
@@ -338,14 +349,22 @@ export class sbiParser {
                 }
             });
 
-            sbiUtils.remove(lines, matchObj.line);
+            this.updateLines(lines, matchObj, this.#osrHealthRegex);
         }
     }
 
     static async setSpeedAsync(lines, actor) {
-        const speedLine = lines.find(line => line.toLowerCase().startsWith("speed"));
+        const matchObj = lines
+            .map(line => {
+                return {
+                    "line": line,
+                    "match": this.#osrSpeedRegex.exec(line) ?? /^speed.+/i.exec(line)
+                }
+            })
+            .find(obj => obj.match);
 
-        if (speedLine != null) {
+        if (matchObj) {
+            const speedLine = matchObj.match[0];
             const match = [...speedLine.matchAll(this.#speedRegex)];
             const speedMatch = match.find(m => m.groups.name.toLowerCase() === "speed");
 
@@ -396,7 +415,7 @@ export class sbiParser {
                 })
             }
 
-            sbiUtils.remove(lines, speedLine);
+            this.updateLines(lines, matchObj, this.#osrSpeedRegex);
         }
     }
 
@@ -412,15 +431,21 @@ export class sbiParser {
     }
 
     static async setAbilitiesAsync(lines, actor) {
+        let abilitiesFound = false;
+        const foundLines = [];
+
+        // Check for standard abilities first.
+        ////////////////////////////////////////////////
+
         const foundAbilityNames = [];
         const foundAbilityValues = []
-        const foundLines = [];
 
         for (const line of lines) {
             const trimmedLine = line.trim();
 
             // Names come before values, so if we've found all the values then we've found all the names.
             if (foundAbilityValues.length == 6) {
+                abilitiesFound = true;
                 break;
             }
 
@@ -455,6 +480,36 @@ export class sbiParser {
         }
 
         await actor.update(actorData);
+
+        // Check for OSR abilities if standard ones weren't found.
+        ////////////////////////////////////////////////
+
+        if (!abilitiesFound) {
+            const abilities = ["str", "dex", "con", "int", "wis", "cha"];
+
+            for (const line of lines) {
+                const osrAbilityMatches = abilities
+                    .map(a => {
+                        const regex = new RegExp(`(?<attribute>${a}) (?<modifier>[+-]\\d+)`, "i");
+                        const match = regex.exec(line);
+                        return match;
+                    })
+                    .filter(m => m);
+
+                if (osrAbilityMatches.length) {
+                    abilitiesFound = true;
+                    foundLines.push(line);
+                    const actorData = {};
+
+                    for (const match of osrAbilityMatches) {
+                        const baseValue = 10 + (parseInt(match.groups.modifier) * 2)
+                        sbiUtils.assignToObject(actorData, `data.abilities.${match.groups.attribute.toLowerCase()}.value`, baseValue);
+                    }
+
+                    await actor.update(actorData);
+                }
+            }
+        }
 
         for (const line of foundLines) {
             sbiUtils.remove(lines, line);
@@ -516,15 +571,27 @@ export class sbiParser {
     }
 
     static async setDamagesAsync(lines, actor, type) {
-        const startText = `damage ${type} `;
-        const line = lines.find(line => line.toLowerCase().startsWith(startText));
+        const foundLines = lines.filter(line => line.toLowerCase().includes(type));
 
-        if (line != null) {
-            const foundLine = this.combineLines(lines, line).slice(startText.length).trim();
+        for (const line of foundLines) {
+            const idx = line.toLowerCase().indexOf(type);
+            const foundLine = this.combineLines(lines, line).slice(idx + type.length).trim();
             const damageTypes = [...foundLine.matchAll(this.#damageTypesRegex)]
                 .filter(arr => arr[0].length)
                 .map(arr => arr[0].toLowerCase());
 
+            // Set conditions immunities
+            if (type === "immunities") {
+                const conditionTypes = [...foundLine.matchAll(this.#conditionTypesRegex)]
+                    .filter(arr => arr[0].length)
+                    .map(arr => arr[0].toLowerCase());
+
+                if (conditionTypes.length) {
+                    await actor.update(sbiUtils.assignToObject({}, "data.traits.ci.value", conditionTypes));
+                }
+            }
+
+            // Set damage traits
             let typeValue;
             switch (type) {
                 case "resistances":
@@ -551,14 +618,6 @@ export class sbiParser {
 
             sbiUtils.remove(lines, line);
         }
-    }
-
-    // Example: Condition Immunities paralyzed, poisoned, unconscious
-    static setConditionImmunities(lines, actor) {
-        this.setArrayValues(lines, "condition immunities ",
-            async (values) => {
-                await actor.update(sbiUtils.assignToObject({}, "data.traits.ci.value", values));
-            });
     }
 
     // Example: Senses darkvision 60 ft., passive Perception 18
@@ -597,8 +656,9 @@ export class sbiParser {
     }
 
     // Example: Damage Vulnerabilities bludgeoning, fire
-    static setDamageVulnerabilities(lines, actor) {
-        this.setArrayValues(lines, "damage vulnerabilities ",
+    static setDamageVulnerabilities(lines, actor, isOsr) {
+        const name = isOsr ? "vulnerabilities " : "damage vulnerabilities ";
+        this.setArrayValues(lines, name,
             async (values) => {
                 const knownTypes = [];
                 let customType = null;
@@ -687,18 +747,17 @@ export class sbiParser {
 
     // Example: Challenge 11 (7,200 XP)
     static async setChallengeAsync(lines, actor) {
-        const foundMatch = lines
+        const matchObj = lines
             .map(line => {
                 return {
                     "line": line,
-                    "match": this.#challengeRegex.exec(line)
+                    "match": this.#osrChallengeRegex.exec(line) ?? this.#challengeRegex.exec(line)
                 }
             })
-            .filter(obj => obj.match !== null)
-            .find(obj => obj.match.length);
+            .find(obj => obj.match);
 
-        if (foundMatch != null) {
-            const crValue = foundMatch.match.groups.cr;
+        if (matchObj != null) {
+            const crValue = matchObj.match.groups.cr;
 
             // Handle fractions.
             let crNumber = 0;
@@ -708,20 +767,20 @@ export class sbiParser {
             } else if (crValue.includes("/")) {
                 crNumber = sbiUtils.parseFraction(crValue);
             } else {
-                crNumber = parseInt(foundMatch.match.groups.cr);
+                crNumber = parseInt(matchObj.match.groups.cr);
             }
 
             const actorData = {};
             sbiUtils.assignToObject(actorData, "data.details.cr", crNumber);
-            sbiUtils.assignToObject(actorData, "data.details.xp.value", parseInt(foundMatch.match.groups.xp.replace(",", "")));
+            sbiUtils.assignToObject(actorData, "data.details.xp.value", parseInt(matchObj.match.groups.xp.replace(",", "")));
 
             await actor.update(actorData);
-            sbiUtils.remove(lines, foundMatch.line);
+            this.updateLines(lines, matchObj, this.#osrChallengeRegex);
         }
     }
 
-    static async setFeaturesAsync(lines, actor) {
-        const actionDescriptions = this.getActionDescriptions(lines);
+    static async setFeaturesAsync(lines, actor, isOsr) {
+        const actionDescriptions = this.getActionDescriptions(lines, isOsr);
 
         for (const actionDescription of actionDescriptions) {
             const name = actionDescription.name;
@@ -832,7 +891,7 @@ export class sbiParser {
                 sbiUtils.assignToObject(itemData, "data.activation.type", activationType);
 
                 // How many actions does this cost?
-                const actionCostRegex = /\(costs (?<cost>\d+) actions\)/i;
+                const actionCostRegex = /\((costs )?(?<cost>\d+) actions\)/i;
                 const actionCostMatch = actionCostRegex.exec(actionDescription.name);
                 let actionCost = 1;
 
@@ -849,19 +908,6 @@ export class sbiParser {
                 const item = new Item(itemData);
                 await actor.createEmbeddedDocuments("Item", [item.toObject()]);
             }
-        }
-    }
-
-    // Example: Melee Weapon Attack: +8 to hit, reach 5 ft., one target.
-    static setAttack(text, itemData, actor) {
-        const match = this.#attackRegex.exec(text);
-
-        if (match !== null) {
-            itemData.type = "weapon";
-            sbiUtils.assignToObject(itemData, "data.weaponType", "natural");
-            sbiUtils.assignToObject(itemData, "data.ability", actor.data.data.abilities.str.mod > actor.data.data.abilities.dex.mod ? "str" : "dex");
-
-            this.setDamageRolls(text, itemData, "hit:", actor);
         }
     }
 
@@ -987,24 +1033,6 @@ export class sbiParser {
         }
     }
 
-    // Example: Each creature in the cone must make a DC 13 Dexterity saving throw, taking 44 (8d10) 
-    // cold damage on a failed save or half as much damage on a ssuccessful one.
-    static setSavingThrow(text, itemData, actor) {
-        const match = this.#savingThrowRegex.exec(text);
-
-        if (match !== null) {
-            const dc = match.groups.savedc;
-            const ability = match.groups.saveability;
-
-            sbiUtils.assignToObject(itemData, "data.actionType", "save");
-            sbiUtils.assignToObject(itemData, "data.save.ability", this.convertToShortAbility(ability));
-            sbiUtils.assignToObject(itemData, "data.save.dc", parseInt(dc));
-            sbiUtils.assignToObject(itemData, "data.save.scaling", "flat");
-
-            this.setDamageRolls(text, itemData, "saving throw", actor);
-        }
-    }
-
     // Example: Frost Breath (Recharge 5–6).
     static setRecharge(text, itemData) {
         const match = this.#rechargeRegex.exec(text);
@@ -1028,7 +1056,7 @@ export class sbiParser {
 
     // Example: Melee Weapon Attack: +8 to hit, reach 5 ft., one target.
     static setReach(text, itemData) {
-        const match = this.#reachRegex.exec(text);
+        const match = this.#reachRegex.exec(text) ?? this.#osrReachRegex.exec(text);
 
         if (match !== null) {
             const reach = parseInt(match.groups.reach);
@@ -1060,26 +1088,73 @@ export class sbiParser {
     // or
     // Frost Breath (Recharge 5–6). The hound exhales a 15-foot cone of frost. Each creature in the cone must make a DC 13 
     // Dexterity saving throw, taking 44(8d10) cold damage on a failed save or half as much damage on a successful one.
-    static setDamageRolls(text, itemData, lookup, actor) {
-        const regexQuery = sbiUtils.format(this.#damageRollsQuery, lookup);
-        const regex = new RegExp(regexQuery, "i");
-        const match = regex.exec(text);
+    static setAttackOrSave(description, itemData, actor) {
+        // Some attacks include a saving throw, so we'll just for both attack rolls and saving throw rolls
+        let attackDescription = description;
+        let saveDescription = null;
+        let attackMatch = null;
+        const saveMatch = this.#savingThrowRegex.exec(description);
 
-        if (match !== null) {
+        if (saveMatch) {
+            attackDescription = description.slice(0, saveMatch.index);
+            saveDescription = description.slice(saveMatch.index);
+        }
+
+        if (attackDescription.length) {
+            attackMatch = this.#attackRegex.exec(attackDescription);
+            if (attackMatch) {
+                itemData.type = "weapon";
+                sbiUtils.assignToObject(itemData, "data.weaponType", "natural");
+                sbiUtils.assignToObject(itemData, "data.ability", actor.data.data.abilities.str.mod > actor.data.data.abilities.dex.mod ? "str" : "dex");
+
+                this.setDamageRolls(attackDescription, "attack", itemData, actor)
+            }
+        }
+
+        if (saveDescription) {
+            if (!attackMatch) {
+                sbiUtils.assignToObject(itemData, "data.actionType", "save");
+            }
+
+            const savingThrowMatch = this.#savingThrowRegex.exec(description);
+            if (savingThrowMatch) {
+                const dc = savingThrowMatch.groups.savedc;
+                const ability = savingThrowMatch.groups.saveability;
+
+                sbiUtils.assignToObject(itemData, "data.save.ability", this.convertToShortAbility(ability));
+                sbiUtils.assignToObject(itemData, "data.save.dc", parseInt(dc));
+                sbiUtils.assignToObject(itemData, "data.save.scaling", "flat");
+
+                this.setDamageRolls(saveDescription, savingThrowMatch.groups.savetext, itemData, actor)
+            }
+        }
+    }
+
+    static setDamageRolls(description, lookup, itemData, actor) {
+        // const regexQuery = sbiUtils.format(this.#damageRollsQuery, lookup);
+        // const regex = new RegExp(regexQuery, "i");
+        // const match = regex.exec(description);
+        const match = this.#damageRollRegex.exec(description);
+
+        if (match) {
             const damageRoll = match.groups.damageroll1;
             const damageType = match.groups.damagetype1;
+            const hasDamageMod = match.groups.damagemod1 != undefined;
             const plusDamageRoll = match.groups.damageroll2;
             const plusDamageType = match.groups.damagetype2;
+            const plusHasDamageMod = match.groups.damagemod2 != undefined;
 
             // Set the damage rolls and types. I've never seen more that two damage rolls for one attack.
             const damageParts = [];
 
             if (damageRoll && damageType) {
-                damageParts.push([`${damageRoll} + @mod`, damageType]);
+                var modText = hasDamageMod ? " + @mod" : "";
+                damageParts.push([`${damageRoll}${modText}`, damageType]);
             }
 
             if (plusDamageRoll && plusDamageType) {
-                damageParts.push([`${plusDamageRoll} + @mod`, plusDamageType]);
+                var modText = plusHasDamageMod ? " + @mod" : "";
+                damageParts.push([`${plusDamageRoll}${modText}`, plusDamageType]);
             }
 
             if (itemData.data.damage === undefined) {
@@ -1114,7 +1189,7 @@ export class sbiParser {
             }
         }
 
-        const versatilematch = this.#versatileRegex.exec(text);
+        const versatilematch = this.#versatileRegex.exec(description);
 
         if (versatilematch !== null) {
             itemData.data.damage.versatile = versatilematch.groups.damageroll;
@@ -1127,62 +1202,63 @@ export class sbiParser {
 
     // Combines lines of text into sentences and paragraphs. This is complicated because finding 
     // sentences that can span multiple lines are hard to describe to a computer.
-    static getActionDescriptions(lines) {
+    static getActionDescriptions(lines, isOsr) {
         const result = [];
+        const validLines = lines.filter(l => l);
         let actionDescription = null;
         let foundTitle = false;
 
         // Pull out the entire spell block because it's formatted differently than all the other action blocks.
         const notSpellLines = [];
         const spellLines = [];
-        let startedSpellTitleBlock = false;
-        let startedSpellSpellsBlock = false;
+        let foundSpellBlock = false;
 
         // Start taking lines from the spell block when we've found the beginning until 
         // we've gotten into the spells and hit a line where the next line has a period.
-        for (let index = 0; index < lines.length; index++) {
-            const line = lines[index];
+        for (let index = 0; index < validLines.length; index++) {
+            let line = validLines[index];
 
-            if (!startedSpellTitleBlock) {
-                startedSpellTitleBlock = line.match(/\binnate spellcasting\b|\bspellcasting\b/i) != null;
-            }
+            if (!foundSpellBlock) {
+                foundSpellBlock = line.match(/\binnate spellcasting\b|\bspellcasting\b/i) != null;
 
-            const isSpellLine = this.#spellLineRegex.exec(line) || this.#spellInnateLineRegex.exec(line);
-
-            // We found the first line with spells in it, so stop tracking the title block
-            // and start tracking the spells block.
-            if (startedSpellTitleBlock && isSpellLine) {
-                startedSpellTitleBlock = false;
-                startedSpellSpellsBlock = true;
+                if (foundSpellBlock && line === "Spellcasting" && !line.endsWith(".")) {
+                    line = line + ".";
+                }
             }
 
             // If we're inside of a spell block, store it off in the spell lines array,
             // otherwise store it into the not spell lines array.
-            if (startedSpellTitleBlock || startedSpellSpellsBlock) {
+            if (foundSpellBlock) {
                 spellLines.push(line);
             } else {
-                startedSpellSpellsBlock = false;
+                foundSpellBlock = false;
                 notSpellLines.push(line);
             }
 
-            // Check to see if we've reached the end of the spell block by seeing if 
-            // the next line has a period. If it does, that means it's the title of 
-            // a new action block.
-            const nextLineIsNotSpellLine = index < lines.length - 2 && lines[index + 1].includes(".");
+            if (!isOsr) {
+                // Check to see if we've reached the end of the spell block by seeing if 
+                // the next line is a title.
+                const nextLineIsTitle = index < validLines.length - 2
+                    && this.#actionTitleRegex.exec(validLines[index + 1]) != null;
 
-            if (startedSpellSpellsBlock && nextLineIsNotSpellLine) {
-                // Add a period at the end so that sections are extracted correctly.
-                spellLines[spellLines.length - 1] = spellLines[spellLines.length - 1] + ".";
-                startedSpellSpellsBlock = false;
+                if (foundSpellBlock && nextLineIsTitle) {
+                    // Add a period at the end so that sections are extracted correctly.
+                    if (!spellLines[spellLines.length - 1].endsWith(".")) {
+                        spellLines[spellLines.length - 1] = spellLines[spellLines.length - 1] + ".";
+                    }
+
+                    // Break out of the spell block.
+                    foundSpellBlock = false;
+                }
             }
         }
 
         const sentences = sbiUtils.makeSentences(spellLines).concat(sbiUtils.makeSentences(notSpellLines));
 
         for (const sentence of sentences) {
-            const match = this.#actionTitleRegex.exec(sentence);
+            const titleMatch = this.#actionTitleRegex.exec(sentence);
 
-            if (match && !foundTitle) {
+            if (titleMatch && !foundTitle) {
                 // Ignore two titles in a row because it means that the second one is just a short description and not a real title.
                 foundTitle = true;
                 actionDescription = new ActionDescription(sbiUtils.trimStringEnd(sentence, "."));
@@ -1202,8 +1278,14 @@ export class sbiParser {
             }
         }
 
-        for (const actionDescription of result) {
-            actionDescription.description = this.formatForDisplay(actionDescription.description.replace("^", ""));
+        for (let index = 0; index < result.length; index++) {
+            const actionDescription = result[index];
+            if (actionDescription.description == null && index != 0) {
+                // If there's no description, assume it's a line at the end of the last action description that just looks like a title.
+                result[index - 1].description = result[index - 1].description + " " + actionDescription.name;
+            } else {
+                actionDescription.description = this.formatForDisplay(actionDescription.description);
+            }
         }
 
         return result;
@@ -1215,8 +1297,7 @@ export class sbiParser {
 
     static isLineIgnored(line, nextLine) {
         const ignoreList = [
-            "proficiency bonus",
-            "traits"
+            "proficiency bonus"
         ]
 
         const lowerLine = line.toLowerCase();
@@ -1246,8 +1327,7 @@ export class sbiParser {
 
             const values = foundLine
                 .split(",")
-                .map(str => str.trim()
-                    .toLowerCase());
+                .map(str => str.trim().toLowerCase());
 
             setValueFunc(values);
             sbiUtils.remove(lines, line);
@@ -1263,7 +1343,12 @@ export class sbiParser {
             "condition immunities",
             "senses",
             "languages",
-            "challenge"
+            "challenge",
+            // osr
+            "resistances",
+            "immunities",
+            "vulnerabilities",
+            "spellcasting"
         ];
 
         const linesToCheck = sbiUtils.skipWhile(lines, (line) => line !== startingLine);
@@ -1275,12 +1360,22 @@ export class sbiParser {
                 const currentLine = linesToCheck[i];
                 combinedLines.push(currentLine);
 
-                const nextLine = i < linesCount - 1 ? linesToCheck[i + 1] : null;
+                const lowerCurLine = currentLine.toLowerCase().trim();
+                const nextLine = i < linesCount - 1 ? linesToCheck[i + 1].toLowerCase().trim() : null;
 
-                if (nextLine != null &&
-                    (lineBeginnings.some(lb => nextLine.toLowerCase().startsWith(lb)) ||
-                        (currentLine.trimEnd().endsWith('.') && sbiUtils.startsWithCapital(nextLine)))) {
-                    break;
+                // If the next line start with one of the known beginnings listed above, or
+                // if the current line ends in a period while the next line starts with a capital 
+                // letter, consider this the end of the block and break out of the loop.
+                if (nextLine != null) {
+                    // Special check for OSR-type blocks where the passive perception is split across two lines.
+                    if (lowerCurLine.endsWith("pass.") && nextLine.startsWith("perception")) {
+                        continue;
+                    }
+
+                    if (lineBeginnings.some(lb => nextLine.startsWith(lb)) ||
+                        (lowerCurLine.endsWith('.') && sbiUtils.startsWithCapital(nextLine))) {
+                        break;
+                    }
                 }
             }
         }
@@ -1298,6 +1393,21 @@ export class sbiParser {
         }
 
         return combinedLines.join(" ").replace("- ", "-");
+    }
+
+    // Updates the 'lines' array based on whether the statblock is an osr version or not.
+    // For osr blocks, we don't want to remove the entire line.
+    static updateLines(lines, matchObj, matchRegex) {
+        if (matchObj.line.match(matchRegex)) {
+            var idx = lines.indexOf(matchObj.line);
+            lines[idx] = lines[idx].replace(matchObj.match[0], "").trim();
+
+            if (lines[idx].trim().length == 0) {
+                sbiUtils.remove(lines, matchObj.line);
+            }
+        } else {
+            sbiUtils.remove(lines, matchObj.line);
+        }
     }
 
     static convertLanguage(language) {
