@@ -517,7 +517,10 @@ export class sbiParser {
     }
 
     static async setSavingThrowsAsync(lines, actor) {
-        const line = lines.find(line => line.toLowerCase().startsWith("saving throw"));
+        const line = lines.find(line => {
+            const lowerLine = line.toLowerCase();
+            return lowerLine.startsWith("saving throw") || lowerLine.startsWith("saves")
+        });
 
         if (line != null) {
             const matches = [...line.matchAll(this.#abilitySavesRegex)];
