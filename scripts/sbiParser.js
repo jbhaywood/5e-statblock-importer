@@ -21,7 +21,7 @@ export class sbiParser {
     // ([\w\d\-+,;']+\s?){0,3}               <- Represents the words that follow the first word, using the same regex for the allowed characters.
     //                                              We assume the title only has 0-3 words following it, otherwise it's probably a sentence.
     // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
-    static #actionTitleRegex = /^(([A-Z][\w\d\-+,;']+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\(.+\))?)\./;
+    static #actionTitleRegex = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\(.+\))?)\./;
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (tiny|small))?\s(?<type>\w+)([,\s]+\((?<race>[,\w\s]+)\))?([,\s]+(?<alignment>[\w\s\-]+))?/i;
     static #armorRegex = /^((armor|armour) class)\s?(?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static #healthRegex = /^(hit points)\s?(?<hp>\d+)\s?\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\)/i;
@@ -1256,7 +1256,9 @@ export class sbiParser {
             }
         }
 
-        const sentences = sbiUtils.makeSentences(spellLines).concat(sbiUtils.makeSentences(notSpellLines));
+        const notSpellSentences = sbiUtils.makeSentences(notSpellLines);
+        const spellSentences = sbiUtils.makeSentences(spellLines);
+        const sentences = notSpellSentences.concat(spellSentences);
 
         for (const sentence of sentences) {
             const titleMatch = this.#actionTitleRegex.exec(sentence);
