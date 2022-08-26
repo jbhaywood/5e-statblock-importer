@@ -146,7 +146,7 @@ export class sbiUtils {
     }
 
     static makeSentences(strings) {
-        return strings.join(" ").replace("  ", " ").split(".").filter(str => str).map(str => str.trim(" ") + ".");
+        return strings.join(" ").replace("  ", " ").split(/[.!]/).filter(str => str).map(str => str.trim(" ") + ".");
     }
 
     // ==========================

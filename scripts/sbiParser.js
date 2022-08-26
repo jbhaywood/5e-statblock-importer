@@ -21,10 +21,10 @@ export class sbiParser {
     // ([\w\d\-+,;']+\s?){0,3}               <- Represents the words that follow the first word, using the same regex for the allowed characters.
     //                                              We assume the title only has 0-3 words following it, otherwise it's probably a sentence.
     // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
-    static #actionTitleRegex = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\(.+\))?)\./;
+    static #actionTitleRegex = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\(.+\))?)[.!]/;
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (tiny|small))?\s(?<type>\w+)([,\s]+\((?<race>[,\w\s]+)\))?([,\s]+(?<alignment>[\w\s\-]+))?/i;
     static #armorRegex = /^((armor|armour) class)\s?(?<ac>\d+)( \((?<armortype>.+)\))?/i;
-    static #healthRegex = /^(hit points)\s?(?<hp>\d+)\s?\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\)/i;
+    static #hitPointsRegex = /^(hit points)\s?(?<hp>\d+)\s?(\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\))?/i;
     static #speedRegex = /(?<name>\w+)\s?(?<value>\d+)/ig;
     static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+\-−–]\d+)\)/g;
@@ -329,7 +329,7 @@ export class sbiParser {
             .map(line => {
                 return {
                     "line": line,
-                    "match": this.#osrHealthRegex.exec(line) ?? this.#healthRegex.exec(line)
+                    "match": this.#osrHealthRegex.exec(line) ?? this.#hitPointsRegex.exec(line)
                 }
             })
             .find(obj => obj.match);
@@ -1266,7 +1266,10 @@ export class sbiParser {
             if (titleMatch && !foundTitle) {
                 // Ignore two titles in a row because it means that the second one is just a short description and not a real title.
                 foundTitle = true;
-                actionDescription = new ActionDescription(sbiUtils.trimStringEnd(sentence, "."));
+
+                // Remove the period or exclamation mark from the title.
+                const title = sentence.replace(/[.!]$/, "");
+                actionDescription = new ActionDescription(title);
 
                 result.push(actionDescription);
             } else {
