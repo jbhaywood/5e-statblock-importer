@@ -1370,12 +1370,12 @@ export class sbiParser {
 
                 const lowerCurLine = currentLine.toLowerCase().trim();
                 const nextLine = i < linesCount - 1 ? linesToCheck[i + 1].trim() : null;
-                const lowerNextLine = nextLine.toLowerCase();
+                const lowerNextLine = nextLine?.toLowerCase();
 
                 // If the next line start with one of the known beginnings listed above, or
                 // if the current line ends in a period while the next line starts with a capital 
                 // letter, consider this the end of the block and break out of the loop.
-                if (nextLine != null) {
+                if (nextLine != null && lowerNextLine != null) {
                     // Special check for OSR-type blocks where the passive perception is split across two lines.
                     if (lowerCurLine.endsWith("pass.") && lowerNextLine.startsWith("perception")) {
                         continue;
