@@ -24,7 +24,7 @@ export class sbiParser {
     static #actionTitleRegex = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\(.+\))?)[.!]/;
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (tiny|small))?\s(?<type>\w+)([,\s]+\((?<race>[,\w\s]+)\))?([,\s]+(?<alignment>[\w\s\-]+))?/i;
     static #armorRegex = /^((armor|armour) class)\s?(?<ac>\d+)( \((?<armortype>.+)\))?/i;
-    static #hitPointsRegex = /^(hit points)\s?(?<hp>\d+)\s?(\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\))?/i;
+    static #hitPointsRegex = /^(hit points)\.?\s?(?<hp>\d+)\s?(\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\))?/i;
     static #speedRegex = /(?<name>\w+)\s?(?<value>\d+)/ig;
     static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+\-−–]\d+)\)/g;
@@ -405,10 +405,10 @@ export class sbiParser {
                                     .join(", ")
                             },
                             "movement": {
-                                "burrow": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("burrow"))?.value),
-                                "climb": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("climb"))?.value),
-                                "fly": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("fly"))?.value),
-                                "swim": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("swim"))?.value),
+                                "burrow": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("burrow"))?.value ?? 0),
+                                "climb": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("climb"))?.value ?? 0),
+                                "fly": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("fly"))?.value ?? 0),
+                                "swim": parseInt(otherSpeeds.find(obj => obj.name.toLowerCase().startsWith("swim"))?.value ?? 0),
                                 "hover": speedLine.toLowerCase().includes("hover")
                             }
                         }
