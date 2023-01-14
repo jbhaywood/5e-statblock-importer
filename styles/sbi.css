@@ -2,12 +2,23 @@
     width: 97%;
 }
 
-.sbi-button-container {
-    text-align: right;
+#sbi-bottom {
+    display: flex;
+    gap: 5px;
+}
+
+#sbi-import-text {
+    align-self: center;
+}
+
+#sbi-import-select {
+    width: 33%;
+    align-self: center;
 }
 
 #sbi-import-button {
     width: 33%;
+    margin-left: auto;
 }
 
 #sbi-input {

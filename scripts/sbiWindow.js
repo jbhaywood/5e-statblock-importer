@@ -39,8 +39,19 @@ export class sbiWindow extends Application {
         sbiUtils.log("Listeners activated")
         super.activateListeners(html);
 
-        let importButton = $("#sbi-import-button");
-        importButton.on("click", async function() {
+        const folderSelect = $("#sbi-import-select")[0];
+
+        // Add a default option.
+        const noneFolder = "None";
+        folderSelect.add(new Option(noneFolder));
+
+        // Add the available folders.
+        for (const folder of [...game.folders]) {
+            folderSelect.add(new Option(folder.name));
+        }
+
+        const importButton = $("#sbi-import-button");
+        importButton.on("click", async function () {
             sbiUtils.log("Clicked import button");
 
             // TODO: let user define the folder that the actor goes into
@@ -51,11 +62,14 @@ export class sbiWindow extends Application {
                 .split(/\n/g)
                 .filter(str => str.length);
 
+            const selectedFolder = folderSelect.options[folderSelect.selectedIndex].text;
+            const selectedFolderId = selectedFolder == noneFolder ? null : [...game.folders.keys()][folderSelect.selectedIndex - 1];
+
             if (sbiConfig.options.debug) {
-                await sbiParser.parseInput(lines);
+                await sbiParser.parseInput(lines, selectedFolderId);
             } else {
                 try {
-                    await sbiParser.parseInput(lines);
+                    await sbiParser.parseInput(lines, selectedFolderId);
                 } catch (error) {
                     ui.notifications.error("5E STATBLOCK IMPORTER: An error has occured. Please report it using the module link so it can get fixed.")
                 }

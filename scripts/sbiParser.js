@@ -56,7 +56,7 @@ export class sbiParser {
     static #osrSpeedRegex = /Speed[\s\d\w’,]+;/;
     static #osrReachRegex = /(?<reach>\d+)’ reach/;
 
-    static async parseInput(lines) {
+    static async parseInput(lines, selectedFolderId) {
         if (lines.length) {
             const sectionHeaders = [
                 "actions",
@@ -119,7 +119,8 @@ export class sbiParser {
 
             const actor = await Actor.create({
                 name: sbiUtils.capitalizeAll(actorName),
-                type: "npc"
+                type: "npc",
+                folder: selectedFolderId
             });
 
             await this.setRacialDetailsAsync(storedLines, actor);
