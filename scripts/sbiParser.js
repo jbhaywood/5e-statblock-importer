@@ -268,7 +268,7 @@ export class sbiParser {
 
             sbiUtils.assignToObject(detailsData, "data.details.alignment", sbiUtils.capitalizeAll(matchObj.match.groups.alignment?.trim()));
             sbiUtils.assignToObject(detailsData, "data.details.race", sbiUtils.capitalizeAll(matchObj.match.groups.race?.trim()));
-            sbiUtils.assignToObject(detailsData, "data.details.type", sbiUtils.capitalizeAll(matchObj.match.groups.type?.trim()));
+            sbiUtils.assignToObject(detailsData, "data.details.type.value", matchObj.match.groups.type?.trim());
 
             await actor.update(detailsData);
             sbiUtils.remove(lines, matchObj.line);
