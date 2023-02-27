@@ -867,6 +867,10 @@ export class sbiParser {
                 if (lowerActionName === "lair actions") {
                     sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "lair");
 
+                    // Lair actions don't use titles, so it's just one item with all actions included in the description 
+                    // text. Because of that, we need to assign the type here instead of in the 'else' block below.
+                    sbiUtils.assignToObject(itemData, "data.activation.type", "lair");
+
                     // What iniative count does the lair action activate?
                     const lairInitiativeRegex = /initiative count (?<count>\d+)/i;
                     const lairInitiativeMatch = lairInitiativeRegex.exec(actionDescription.description);
