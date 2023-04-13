@@ -52,14 +52,43 @@ export class sbiUtils {
         return result;
     }
 
+    static dndPacks = null;
+    static otherPacks = null;
+
     static async getItemFromPacksAsync(itemName, type) {
         let result = null;
 
-        for (const pack of game.packs) {
+        // Create pack arrays once to save time.
+        if (this.dndPacks == null && this.otherPacks == null) {
+            // Look through the non-default packs first, since those are more
+            // likely to contain customized versions of the dnd5e items.
+            this.dndPacks = [];
+            this.otherPacks = [];
+
+            for (const pack of game.packs) {
+                if (pack.metadata.id.startsWith("dnd5e")) {
+                    this.dndPacks.push(pack);
+                } else {
+                    this.otherPacks.push(pack);
+                }
+            }
+        }
+
+        for (const pack of this.otherPacks) {
             result = await this.getItemFromPackAsync(pack, itemName);
 
             if (result && (!type || result.type === type)) {
                 break;
+            }
+        }
+
+        if (result == null) {
+            for (const pack of this.dndPacks) {
+                result = await this.getItemFromPackAsync(pack, itemName);
+
+                if (result && (!type || result.type === type)) {
+                    break;
+                }
             }
         }
 
