@@ -14,14 +14,14 @@ class ActionDescription {
 
 export class sbiParser {
     // The action title regex is complicated. Here's the breakdown...
-    // ([A-Z][\w\d\-+,;']+[\s\-]?)           <- Represents the first word of the title, followed by a space or hyphen. It has to start with a capital letter.
+    // ([A-Z][\w\d\-+,;']+[\s\-]?)               <- Represents the first word of the title, followed by a space or hyphen. It has to start with a capital letter.
     //                                              The word can include word characters, digits, and some punctuation characters.
     //                                              NOTE: Don't add more punctuation than is absolutely neccessary so that we don't get false positives.
     // (of|and|the|from|in|at|on|with|to|by)\s)? <- Represents the prepostion words we want to ignore.
-    // ([\w\d\-+,;']+\s?){0,3}               <- Represents the words that follow the first word, using the same regex for the allowed characters.
+    // ([\w\d\-+,;']+\s?){0,3}                   <- Represents the words that follow the first word, using the same regex for the allowed characters.
     //                                              We assume the title only has 0-3 words following it, otherwise it's probably a sentence.
     // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
-    static #actionTitleRegex = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\(.+\))?)[.!]/;
+    static #actionTitleRegex = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\((?!spell save)[^)]+\))?)[.!]/;
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (tiny|small))?\s(?<type>\w+)([,\s]+\((?<race>[,\w\s]+)\))?([,\s]+(?<alignment>[\w\s\-]+))?/i;
     static #armorRegex = /^((armor|armour) class)\s?(?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static #hitPointsRegex = /^(hit points)\.?\s?(?<hp>\d+)\s?(\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\))?/i;
@@ -954,12 +954,14 @@ export class sbiParser {
 
                 const slots = this.getGroupValue("slots", [...match[0].matchAll(this.#spellCastingRegex)]);
                 const perday = this.getGroupValue("perday", [...match[0].matchAll(this.#spellCastingRegex)]);
-                const spellType = description.toLowerCase().includes("innate spellcasting") ? "innate" : "slots";
+                let spellType;
                 let spellCount;
 
                 if (slots) {
+                    spellType = "slots";
                     spellCount = parseInt(slots);
                 } else if (perday) {
+                    spellType = "innate";
                     spellCount = parseInt(perday);
                 }
 
