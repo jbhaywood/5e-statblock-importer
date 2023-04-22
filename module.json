@@ -3,7 +3,7 @@
     "name": "5e-statblock-importer",
     "title": "5e Statblock Importer",
     "description": "Import monster and NPC statblocks for D&D 5e",
-    "version": "1.66",
+    "version": "1.67",
     "compatibility": {
         "minimum": "0.8.0",
         "verified": "10"
@@ -39,5 +39,5 @@
     ],
     "url": "https://github.com/jbhaywood/5e-statblock-importer",
     "manifest": "https://raw.githubusercontent.com/jbhaywood/5e-statblock-importer/main/module.json",
-    "download": "https://github.com/jbhaywood/5e-statblock-importer/archive/v1.66.zip"
+    "download": "https://github.com/jbhaywood/5e-statblock-importer/archive/v1.67.zip"
 }
