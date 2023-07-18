@@ -848,8 +848,17 @@ export class sbiParser {
     static async setMajorActionAsync(actionName, lines, actor) {
         const actionDescriptions = this.getActionDescriptions(lines);
         const lowerActionName = actionName.toLowerCase();
+
+        // Set the type of action this is.
         let activationType = "";
 
+        if (lowerActionName === "legendary actions") {
+            activationType = "legendary";
+        } else if (lowerActionName === "bonus actions") {
+            activationType = "bonus";
+        }
+
+        // Create the items for each action.
         for (let index = 0; index < actionDescriptions.length; index++) {
             const actionDescription = actionDescriptions[index];
             const itemData = {};
@@ -858,7 +867,7 @@ export class sbiParser {
 
             sbiUtils.assignToObject(itemData, "data.description.value", actionDescription.description);
 
-            if (index == 0) {
+            if (actionDescription.name === "Description") {
                 // Add these just so that it doesn't say the action is not equipped and not proficient in the UI.
                 sbiUtils.assignToObject(itemData, "data.equipped", true);
                 sbiUtils.assignToObject(itemData, "data.proficient", true);
@@ -880,7 +889,6 @@ export class sbiParser {
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
                     }
                 } else if (lowerActionName === "legendary actions") {
-                    activationType = "legendary";
                     sbiUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "legendary");
 
                     // How many legendary actions can it take?
@@ -892,8 +900,6 @@ export class sbiParser {
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.value", actionCount));
                         await actor.update(sbiUtils.assignToObject({}, "data.resources.legact.max", actionCount));
                     }
-                } else if (lowerActionName === "bonus actions") {
-                    activationType = "bonus";
                 }
 
                 const item = new Item(itemData);
@@ -903,7 +909,7 @@ export class sbiParser {
                 sbiUtils.assignToObject(itemData, "data.activation.type", activationType);
 
                 // How many actions does this cost?
-                const actionCostRegex = /\((costs )?(?<cost>\d+) actions\)/i;
+                const actionCostRegex = /\((costs )?(?<cost>\d+) action(s)?\)/i;
                 const actionCostMatch = actionCostRegex.exec(actionDescription.name);
                 let actionCost = 1;
 
