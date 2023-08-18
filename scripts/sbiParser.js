@@ -40,8 +40,8 @@ export class sbiParser {
     static #spellInnateLineRegex = /at will:|\d\/day( each)?:/ig;
     static #spellInnateSingle = /innately cast (?<spellname>[\w|\s]+)(\s\(.+\))?,/i
     static #attackRegex = /\+(?<tohit>\d+) to hit/i;
-    static #reachRegex = /reach (?<reach>\d+) ?(f(ee|oo)*t|'|’)/i;
-    static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ?(f(ee|oo)*t|'|’)/i;
+    static #reachRegex = /reach (?<reach>\d+) ?(f(ee|oo)?t|'|’)/i;
+    static #rangeRegex = /range (?<near>\d+)\/(?<far>\d+) ?(f(ee|oo)?t|'|’)/i;
     static #rechargeRegex = /\(recharge (?<recharge>\d+)([–|-]\d+)?\)/i;
     static #savingThrowRegex = /must (make|succeed on) a dc (?<savedc>\d+) (?<saveability>\w+) (?<savetext>saving throw|save)/i;
     static #versatileRegex = /\((?<damageroll>\d+d\d+( ?\+ ?\d+)?)\) (?<damagetype>\w+) damage if used with two hands/i;
