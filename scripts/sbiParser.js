@@ -621,12 +621,12 @@ export class sbiParser {
                 }
 
                 if (foundLine.toLowerCase().includes("adamantine")) {
-                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, "ada")
+                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, ["ada","mgc"])
                     await actor.update(actorData);
                 }
 
                 if (foundLine.toLowerCase().includes("silvered")) {
-                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, "sil")
+                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, ["sil","mgc"])
                     await actor.update(actorData);
                 }
             }
