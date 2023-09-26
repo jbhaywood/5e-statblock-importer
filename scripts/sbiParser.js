@@ -616,7 +616,17 @@ export class sbiParser {
                 }
 
                 if (foundLine.toLowerCase().includes("nonmagical weapons")) {
-                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.custom`, "From nonmagical weapons")
+                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, "mgc")
+                    await actor.update(actorData);
+                }
+
+                if (foundLine.toLowerCase().includes("adamantine")) {
+                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, "ada")
+                    await actor.update(actorData);
+                }
+
+                if (foundLine.toLowerCase().includes("silvered")) {
+                    const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, "sil")
                     await actor.update(actorData);
                 }
             }
