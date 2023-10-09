@@ -67,7 +67,8 @@ export class sbiParser {
                 "mythic actions",
                 "lair actions",
                 "regional effects",
-                "villain actions"
+                "villain actions",
+                "utility spells"
             ];
 
             // Save off all the lines that precede the first of the above sections.
