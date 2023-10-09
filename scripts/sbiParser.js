@@ -33,7 +33,7 @@ export class sbiParser {
     static #damageTypesRegex = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b|\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b/ig;
     static #conditionTypesRegex = /\bblinded\b|\bcharmed\b|\bdeafened\b|\bdiseased\b|\bexhaustion\b|\bfrightened\b|\bgrappled\b|\bincapacitated\b|\binvisible\b|\bparalyzed\b|\bpetrified\b|\bpoisoned\b|\bprone\b|\brestrained\b|\bstunned\b|\bunconscious\b/ig;
     static #sensesRegex = /(?<name>\bdarkvision\b|\bblindsight\b|\btremorsense\b|\btruesight\b) (?<modifier>\d+)/i;
-    static #challengeRegex = /^(challenge|cr|challenge rating)\s?(?<cr>(½|[\d\/]+))\s?(\((?<xp>[\d,]+)\s?xp\))?/i;
+    static #challengeRegex = /^(challenge|cr|challenge rating)\s?(?<cr>(½|[\d\/]+))(\s(?<role>\w+))?\s?(\((?<xp>[\d,]+)\s?xp\))?/i;
     static #spellCastingRegex = /\((?<slots>\d+) slot|(?<perday>\d+)\/day|spellcasting ability is (?<ability1>\w+)|(?<ability2>\w+) as the spellcasting ability|spell save dc (?<savedc>\d+)/ig;
     static #spellLevelRegex = /(?<level>\d+)(.+)level spellcaster/i;
     static #spellLineRegex = /(at-will|cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th)[\w\d\s\(\)-]*:/ig;
@@ -791,6 +791,10 @@ export class sbiParser {
 
             if (matchObj.match.groups.xp) {
                 sbiUtils.assignToObject(actorData, "data.details.xp.value", parseInt(matchObj.match.groups.xp.replace(",", "")));
+            }
+
+            if (matchObj.match.groups.role) {
+                sbiUtils.assignToObject(actorData, "data.details.source", matchObj.match.groups.role); //Places Flee Mortals Role into the creature's Source field
             }
 
             await actor.update(actorData);
