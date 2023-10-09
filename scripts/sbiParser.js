@@ -621,6 +621,11 @@ export class sbiParser {
                     await actor.update(actorData);
                 }
 
+                if (foundLine.toLowerCase().includes("mundane attacks")) { ///Flee Mortals uses different terminology for this
+                    const actorData = sbiUtils.assignToObject({}, `data.traits.dr.bypasses`, "mgc")
+                    await actor.update(actorData);
+                }
+
                 if (foundLine.toLowerCase().includes("adamantine")) {
                     const actorData = sbiUtils.assignToObject({}, `data.traits.${typeValue}.bypasses`, ["ada","mgc"])
                     await actor.update(actorData);
