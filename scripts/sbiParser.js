@@ -25,6 +25,7 @@ export class sbiParser {
     static #racialDetailsRegex = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (tiny|small))?\s(?<type>\w+)([,\s]+\((?<race>[,\w\s]+)\))?([,\s]+(?<alignment>[\w\s\-]+))?/i;
     static #armorRegex = /^((armor|armour) class)\s?(?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static #hitPointsRegex = /^(hit points)\.?\s?(?<hp>\d+)\s?(\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\))?/i;
+    static #soulsRegex = /^(souls)\.?\s?(?<soulcount>\d+)\s?(\((?<soulformula>\d+d\d+( ?[\+\---] \d+)?)\))?/i;
     static #speedRegex = /(?<name>\w+)\s?(?<value>\d+)/ig;
     static #abilityNamesRegex = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
     static #abilityValuesRegex = /(?<base>\d+)\s?\((?<modifier>[\+\-−–]?\d+)\)/g;
@@ -127,6 +128,7 @@ export class sbiParser {
             await this.setRacialDetailsAsync(storedLines, actor);
             await this.setArmorAsync(storedLines, actor);
             await this.setHealthAsync(storedLines, actor);
+            await this.setSoulsAsync(storedLins, actor);
             await this.setSpeedAsync(storedLines, actor);
             await this.setInitiativeAsync(storedLines, actor);
             await this.setAbilitiesAsync(storedLines, actor);
@@ -353,6 +355,37 @@ export class sbiParser {
             });
 
             this.updateLines(lines, matchObj, this.#osrHealthRegex);
+        }
+    }
+
+   //Handling for Flee Mortals Demons' Souls count, e.g. Souls 5 (2d4)
+    static async setSoulsAsync(lines, actor) {
+        const matchObj = lines
+            .map(line => {
+                return {
+                    "line": lines,
+                    "match": this.#soulsRegex.exec(line)
+                }
+            })
+            .find(obj => obj.match);
+            
+        if (matchObj) {
+            const soulcount = parseInt(matchObj.match.groups.soulcount);
+            const soulformula = matchObj.match.groups.soulformula;
+           
+            const itemData = {};
+            itemData.name = "Souls";
+            itemData.type = "feat";
+            
+            sbiUtils.assignToObject(itemData, "data.activation.type", "special");
+            sbiUtils.assignToObject(itemData, "data.uses.value", soulcount);
+            sbiUtils.assignToObject(itemData, "data.uses.max", 99);
+            sbiUtils.assignToObject(itemData, "data.uses.recovery", soulformula);
+            sbiUtils.assignToObject(itemData, "data.uses.per", "charges");
+            sbiUtils.assignToObject(itemData, "data.description.value", "See the 'Demons and Souls' section on Flee, Mortals! page 56 for more information.");
+
+            const item = new Item(itemData);
+            await actor.createEmbeddedDocuments("Item", [item.toObject()]);
         }
     }
 
