@@ -685,9 +685,20 @@ export class sbiParser {
                 .split(",")
                 .map(line => line.trim());
 
-            const actorData = {};
+            const actorData = {
+                data: {
+                    attributes: {
+                        senses: {
+                            special: "",
+                        },
+                    },
+                },
+            };
 
             for (const sense of senses) {
+                           if (/^passive perception \d+$/.test(sense.toLowerCase())) {
+                continue; // Ignore Passive Perception
+            }
                 const match = this.#sensesRegex.exec(sense);
 
                 if (match) {
@@ -700,7 +711,11 @@ export class sbiParser {
                         sbiUtils.assignToObject(actorData, "token.dimSight", modifier);
                     }
                 } else {
-                    sbiUtils.assignToObject(actorData, "data.attributes.senses.special", sbiUtils.capitalizeAll(sense));
+                     if (actorData.data.attributes.senses.special) {
+                           actorData.data.attributes.senses.special += "; ";
+                     }
+                     actorData.data.attributes.senses.special += sbiUtils.capitalizeAll(sense);
+
                 }
             }
 
