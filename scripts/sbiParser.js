@@ -128,7 +128,7 @@ export class sbiParser {
             await this.setRacialDetailsAsync(storedLines, actor);
             await this.setArmorAsync(storedLines, actor);
             await this.setHealthAsync(storedLines, actor);
-            await this.setSoulsAsync(storedLins, actor);
+            await this.setSoulsAsync(storedLines, actor);
             await this.setSpeedAsync(storedLines, actor);
             await this.setInitiativeAsync(storedLines, actor);
             await this.setAbilitiesAsync(storedLines, actor);
