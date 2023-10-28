@@ -1,12 +1,10 @@
-import {
-    sbiConfig
-} from "./sbiConfig.js";
+import { sbiConfig } from "./sbiConfig.js";
 
 export class sbiUtils {
 
     static log(message) {
         if (sbiConfig.options.debug) {
-            console.log("sbi | " + message);
+            console.log("5e Statblock Importer | " + message);
         }
     }
 
@@ -111,6 +109,13 @@ export class sbiUtils {
     // ==========================
     // String Functions    
     // ==========================
+    // camelToTitleCase("legendaryActions") => "Legendary Actions"
+    static camelToTitleCase(string) {
+        return string// insert a space before all caps
+            .replace(/([A-Z])/g, ' $1')
+            // uppercase the first character
+            .replace(/^./, function (str) { return str.toUpperCase(); })
+    }
 
     // capitalizeAll("passive perception") => "Passive Perception"
     static capitalizeAll(string) {
@@ -174,22 +179,25 @@ export class sbiUtils {
         return result;
     }
 
+    // Given an array of strings, returns an array of strings, each representing one sentence.
     static makeSentences(strings) {
-        return strings.join(" ").replace("  ", " ").split(/[.!]/).filter(str => str).map(str => str.trim(" ") + ".");
+        return this.combineToString(strings)
+            .split(/[.!]/)
+            .filter(str => str)
+            .map(str => str.trim(" ") + ".");
+    }
+
+    // Given an array of strings, returns one string.
+    static combineToString(strings) {
+        return strings
+            .join(" ")
+            .replace("  ", " ")
+            .replace("- ", "-");
     }
 
     // ==========================
     // Array Functions    
     // ==========================
-
-    // remove([1,2,3], 2) => [1,3]
-    static remove(array, item) {
-        const index = array.indexOf(item);
-
-        if (index > -1) {
-            array.splice(index, 1);
-        }
-    }
 
     // last([1,2,3]) => 3
     static last(array) {
