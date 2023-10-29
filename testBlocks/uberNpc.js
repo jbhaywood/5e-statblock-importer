@@ -130,4 +130,11 @@ On initiative count 20 (losing initiative ties), Strahd can take one of the foll
     Strahd summons the angry spirit of one who has died in the castle. The apparition appears next to a hostile creature that Strahd can see, makes an attack against that creature, and then disappears. The apparition has the statistics of a specter.
     Strahd targets one Medium or smaller creature that casts a shadow. The target’s shadow must be visible to Strahd and within 30 feet of him. If the target fails a DC 17 Charisma saving throw, its shadow detaches from it and becomes a shadow that obeys Strahd’s commands, acting on initiative count 20. A greater restoration spell or a remove curse spell cast on the target restores its natural shadow, but only if its undead shadow has been destroyed.
 
-`;
+UTILITY SPELLS
+In addition to any other spells in this stat block, the hag can
+cast the following spells, using Charisma as the spellcasting
+ability (spell save DC 14):
+At will: alter self A, dancing lights A, minor illusion A
+3/day each: animal messenger A, legend lore +, speak
+with animals A
+1/day: scrying +`;

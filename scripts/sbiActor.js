@@ -13,6 +13,7 @@ export class sbiActor {
         await this.setActionsAsync(actor, creatureData);
         await this.setMajorActionAsync(actor, BlockID.legendaryActions, creatureData);
         await this.setMajorActionAsync(actor, BlockID.lairActions, creatureData);
+        await this.setMajorActionAsync(actor, BlockID.villainActions, creatureData);
         await this.setMinorActionsAsync(actor, BlockID.bonusActions, creatureData);
         await this.setMinorActionsAsync(actor, BlockID.reactions, creatureData);
         await this.setArmorAsync(actor, creatureData);
@@ -22,17 +23,19 @@ export class sbiActor {
         await this.setFeaturesAsync(actor, creatureData);
         await this.setHealthAsync(actor, creatureData);
         await this.setLanguagesAsync(actor, creatureData);
+        await this.setRoleAsync(actor, creatureData);
         await this.setSavingThrowsAsync(actor, creatureData);
         await this.setSensesAsync(actor, creatureData);
         await this.setSkillsAsync(actor, creatureData);
         await this.setSpeedAsync(actor, creatureData);
         await this.setRacialDetailsAsync(actor, creatureData);
+        await this.setUtilitySpells(actor, creatureData);
 
         return actor;
     }
 
-    static async setActionsAsync(actor, creature) {
-        for (const actionDescription of creature.actions) {
+    static async setActionsAsync(actor, creatureData) {
+        for (const actionDescription of creatureData.actions) {
             const name = actionDescription.name;
             const lowerName = name.toLowerCase();
             const description = actionDescription.value;
@@ -55,31 +58,32 @@ export class sbiActor {
                 sUtils.assignToObject(itemData, "data.proficient", true);
                 sUtils.assignToObject(itemData, "data.quantity", 1);
 
-
-                this.setRecharge(name, itemData);
-                this.setTarget(description, itemData);
-                this.setReach(description, itemData);
-                this.setRange(description, itemData);
                 this.setAttackOrSave(description, itemData, actor);
+                this.setPerDay(name, itemData);
+                this.setReach(description, itemData);
+                this.setRecharge(name, itemData);
+                this.setRange(description, itemData);
+                this.setTarget(description, itemData);
             }
 
             await this.setItemAsync(itemData, actor);
-        };
+        }
     }
 
     // These are things like legendary, mythic, and lair actions
-    static async setMajorActionAsync(actor, type, creature) {
+    static async setMajorActionAsync(actor, type, creatureData) {
         // Set the type of action this is.
         let activationType = "";
+        const isLegendaryTypeAction = type === BlockID.legendaryActions || type === BlockID.villainActions;
 
-        if (type === BlockID.legendaryActions) {
+        if (isLegendaryTypeAction) {
             activationType = "legendary";
         }
 
         // Create the items for each action.
         // NOTE: If we hit an exception here that 'creature[type]' is undefined, make sure
         // to add that type to the CreatureData constructor with a default array value.
-        for (const actionData of creature[type]) {
+        for (const actionData of creatureData[type]) {
             const actionName = actionData.name;
             const description = actionData.value;
             const itemData = {};
@@ -110,18 +114,15 @@ export class sbiActor {
                         await actor.update(sUtils.assignToObject({}, "data.resources.lair.value", true));
                         await actor.update(sUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
                     }
-                } else if (type === BlockID.legendaryActions) {
+                } else if (isLegendaryTypeAction) {
                     sUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "legendary");
 
                     // How many legendary actions can it take?
-                    const legendaryActionCountRegex = /take (?<count>\d+) legendary/i;
-                    const legendaryActionMatch = legendaryActionCountRegex.exec(description);
+                    const legendaryActionMatch = sRegex.legendaryActionCount.exec(description);
+                    const actionCount = legendaryActionMatch ? parseInt(legendaryActionMatch.groups.count) : 3;
 
-                    if (legendaryActionMatch) {
-                        const actionCount = parseInt(legendaryActionMatch.groups.count);
-                        await actor.update(sUtils.assignToObject({}, "data.resources.legact.value", actionCount));
-                        await actor.update(sUtils.assignToObject({}, "data.resources.legact.max", actionCount));
-                    }
+                    await actor.update(sUtils.assignToObject({}, "data.resources.legact.value", actionCount));
+                    await actor.update(sUtils.assignToObject({}, "data.resources.legact.max", actionCount));
                 }
 
                 await this.setItemAsync(itemData, actor);
@@ -130,8 +131,7 @@ export class sbiActor {
                 sUtils.assignToObject(itemData, "data.activation.type", activationType);
 
                 // How many actions does this cost?
-                const actionCostRegex = /\((costs )?(?<cost>\d+) action(s)?\)/i;
-                const actionCostMatch = actionCostRegex.exec(actionName);
+                const actionCostMatch = sRegex.actionCost.exec(actionName);
                 let actionCost = 1;
 
                 if (actionCostMatch) {
@@ -150,10 +150,10 @@ export class sbiActor {
     }
 
     // These are things like bonus actions and reactions.
-    static async setMinorActionsAsync(actor, type, creature) {
+    static async setMinorActionsAsync(actor, type, creatureData) {
         // NOTE: If we hit an exception here that 'creature[type]' is undefined, make sure
         // to add that type to the CreatureData constructor with a default array value.
-        for (const actionDescription of creature[type]) {
+        for (const actionDescription of creatureData[type]) {
             const name = actionDescription.name;
             const description = actionDescription.value;
 
@@ -180,14 +180,14 @@ export class sbiActor {
         }
     }
 
-    static async setArmorAsync(actor, creature) {
-        if (!creature.armor) return;
+    static async setArmorAsync(actor, creatureData) {
+        if (!creatureData.armor) return;
 
         const actorObj = {};
-        const armorValue = creature.armor.ac;
+        const armorValue = creatureData.armor.ac;
         let foundArmorItems = false;
 
-        for (const armorType of creature.armor.types) {
+        for (const armorType of creatureData.armor.types) {
             if (armorType.toLowerCase() === "natural armor") {
                 sUtils.assignToObject(actorObj, "data.attributes.ac.calc", "natural");
                 sUtils.assignToObject(actorObj, "data.attributes.ac.flat", armorValue);
@@ -216,10 +216,10 @@ export class sbiActor {
         await actor.update(actorObj);
     }
 
-    static async setAbilitiesAsync(actor, creature) {
+    static async setAbilitiesAsync(actor, creatureData) {
         const actorObj = {};
 
-        for (const data of creature.abilities) {
+        for (const data of creatureData.abilities) {
             const propPath = `data.abilities.${data.name.toLowerCase()}.value`;
             sUtils.assignToObject(actorObj, propPath, parseInt(data.value));
         }
@@ -227,47 +227,47 @@ export class sbiActor {
         await actor.update(actorObj);
     }
 
-    static async setChallengeAsync(actor, creature) {
-        if (!creature.challenge) return;
+    static async setChallengeAsync(actor, creatureData) {
+        if (!creatureData.challenge) return;
 
         const actorData = {};
-        sUtils.assignToObject(actorData, "data.details.cr", creature.challenge.cr);
+        sUtils.assignToObject(actorData, "data.details.cr", creatureData.challenge.cr);
 
-        if (creature.challenge.xp) {
-            sUtils.assignToObject(actorData, "data.details.xp.value", creature.challenge.xp);
+        if (creatureData.challenge.xp) {
+            sUtils.assignToObject(actorData, "data.details.xp.value", creatureData.challenge.xp);
         }
 
         await actor.update(actorData);
     }
 
-    static async setDamagesAndConditionsAsync(actor, creature) {
-        if (creature.conditionImmunities) {
-            const conditionTypes = [...creature.conditionImmunities.matchAll(sRegex.conditionTypes)]
+    static async setDamagesAndConditionsAsync(actor, creatureData) {
+        if (creatureData.conditionImmunities) {
+            const conditionTypes = [...creatureData.conditionImmunities.matchAll(sRegex.conditionTypes)]
                 .map(arr => arr[0].toLowerCase())
             await actor.update(sUtils.assignToObject({}, "data.traits.ci.value", conditionTypes));
         }
 
-        if (creature.damageImmunities) {
+        if (creatureData.damageImmunities) {
             const actorData = {};
-            this.setDamageData(creature.damageImmunities, "di", actorData);
+            this.setDamageData(creatureData.damageImmunities, "di", actorData);
             await actor.update(actorData);
         }
 
-        if (creature.damageResistances) {
+        if (creatureData.damageResistances) {
             const actorData = {};
-            this.setDamageData(creature.damageResistances, "dr", actorData);
+            this.setDamageData(creatureData.damageResistances, "dr", actorData);
             await actor.update(actorData);
         }
 
-        if (creature.damageVulnerabilities) {
+        if (creatureData.damageVulnerabilities) {
             const actorData = {};
-            this.setDamageData(creature.damageVulnerabilities, "dv", actorData);
+            this.setDamageData(creatureData.damageVulnerabilities, "dv", actorData);
             await actor.update(actorData);
         }
     }
 
-    static async setFeaturesAsync(actor, creature) {
-        for (const actionDescription of creature.features) {
+    static async setFeaturesAsync(actor, creatureData) {
+        for (const actionDescription of creatureData.features) {
             const name = actionDescription.name;
             const lowerName = name.toLowerCase();
             const description = actionDescription.value;
@@ -321,23 +321,23 @@ export class sbiActor {
         }
     }
 
-    static async setHealthAsync(actor, creature) {
+    static async setHealthAsync(actor, creatureData) {
         await actor.update({
             "data": {
                 "attributes": {
                     "hp": {
-                        "value": creature.health.hp,
-                        "max": creature.health.hp,
-                        "formula": creature.health.formula
+                        "value": creatureData.health.hp,
+                        "max": creatureData.health.hp,
+                        "formula": creatureData.health.formula
                     }
                 }
             }
         });
     }
 
-    static async setLanguagesAsync(actor, creature) {
-        const knownValues = creature.language.knownLanguages.map(str => this.convertLanguage(str));
-        const unknownValues = creature.language.unknownLanguages.map(str => this.convertLanguage(str));
+    static async setLanguagesAsync(actor, creatureData) {
+        const knownValues = creatureData.language.knownLanguages.map(str => this.convertLanguage(str));
+        const unknownValues = creatureData.language.unknownLanguages.map(str => this.convertLanguage(str));
 
         const actorData = {};
         sUtils.assignToObject(actorData, "data.traits.languages.value", knownValues);
@@ -346,10 +346,16 @@ export class sbiActor {
         await actor.update(actorData);
     }
 
-    static async setSavingThrowsAsync(actor, creature) {
+    static async setRoleAsync(actor, creatureData) {
+        if (!creatureData.role) return;
+
+        await actor.update(sUtils.assignToObject({}, "data.details.type.subtype", creatureData.role));
+    }
+
+    static async setSavingThrowsAsync(actor, creatureData) {
         const actorData = {};
 
-        for (const savingThrow of creature.savingThrows) {
+        for (const savingThrow of creatureData.savingThrows) {
             const name = savingThrow.toLowerCase();
             const propPath = `data.abilities.${name}.proficient`;
             sUtils.assignToObject(actorData, propPath, 1);
@@ -358,10 +364,10 @@ export class sbiActor {
         await actor.update(actorData);
     }
 
-    static async setSensesAsync(actor, creature) {
+    static async setSensesAsync(actor, creatureData) {
         const actorData = {};
 
-        for (const sense of creature.senses) {
+        for (const sense of creatureData.senses) {
             const name = sense.name.toLowerCase();
             const modifier = parseInt(sense.value);
 
@@ -371,18 +377,18 @@ export class sbiActor {
                 sUtils.assignToObject(actorData, "token.dimSight", modifier);
             }
 
-            if (creature.specialSense) {
-                sUtils.assignToObject(actorData, "data.attributes.senses.special", sUtils.capitalizeAll(creature.specialSense));
+            if (creatureData.specialSense) {
+                sUtils.assignToObject(actorData, "data.attributes.senses.special", sUtils.capitalizeAll(creatureData.specialSense));
             }
         }
 
         await actor.update(actorData);
     }
 
-    static async setSkillsAsync(actor, creature) {
+    static async setSkillsAsync(actor, creatureData) {
         // Calculate skill proficiency value by querying the actor data. This must happen after the abilities are set.
         // 1 is regular proficiency, 2 is double proficiency, etc.
-        for (const skill of creature.skills) {
+        for (const skill of creatureData.skills) {
             const skillId = this.convertToShortSkill(skill.name);
             const skillMod = parseInt(skill.value);
             const actorSkill = actor.data.data.skills[skillId];
@@ -417,7 +423,9 @@ export class sbiActor {
                     .slice(match.index, lastIndex)
                     .slice(match[0].length)
                     .split(/,(?![^\(]*\))/) // split on commas that are outside of parenthesis
+                    .map(spell => spell.trim()) // remove spaces
                     .map(spell => sUtils.trimStringEnd(spell, ".")) // remove end period
+                    .map(spell => spell.replace(/\s[ABR\+]$/, "")) // remove MCDM activation symbols
                     .map(spell => sUtils.capitalizeAll(spell)); // capitalize words
 
                 descriptionLines.push(`<p><b>${match[0]}</b> ${spellNames.join(", ")}</p>`);
@@ -437,9 +445,11 @@ export class sbiActor {
                 }
 
                 for (const spellName of spellNames) {
+                    // Remove text in parenthesis when storing the spell name for lookup later.
+                    let cleanName = spellName.replace(/\(.*\)/, "").trim()
+
                     spellDatas.push({
-                        // Remove text in parenthesis when storing the spell name for lookup later.
-                        "name": spellName.replace(/\(.*\)/, "").trim(),
+                        "name": cleanName,
                         "type": spellType,
                         "count": spellCount
                     });
@@ -518,8 +528,8 @@ export class sbiActor {
         }
     }
 
-    static async setSpeedAsync(actor, creature) {
-        const speedData = creature.speeds.find(d => d.name.toLowerCase() === "speed");
+    static async setSpeedAsync(actor, creatureData) {
+        const speedData = creatureData.speeds.find(d => d.name.toLowerCase() === "speed");
 
         if (speedData != null) {
             const speedValue = speedData.value;
@@ -538,7 +548,7 @@ export class sbiActor {
             })
         }
 
-        const otherSpeeds = creature.speeds.filter(d => d != speedData);
+        const otherSpeeds = creatureData.speeds.filter(d => d != speedData);
 
         if (otherSpeeds.length) {
             await actor.update({
@@ -562,8 +572,8 @@ export class sbiActor {
         }
     }
 
-    static async setRacialDetailsAsync(actor, creature) {
-        const sizeValue = creature.size.toLowerCase();
+    static async setRacialDetailsAsync(actor, creatureData) {
+        const sizeValue = creatureData.size.toLowerCase();
         const detailsData = {};
 
         switch (sizeValue) {
@@ -584,11 +594,26 @@ export class sbiActor {
                 break;
         }
 
-        sUtils.assignToObject(detailsData, "data.details.alignment", sUtils.capitalizeAll(creature.alignment?.trim()));
-        sUtils.assignToObject(detailsData, "data.details.race", sUtils.capitalizeAll(creature.race?.trim()));
-        sUtils.assignToObject(detailsData, "data.details.type.value", creature.type?.trim().toLowerCase());
+        sUtils.assignToObject(detailsData, "data.details.alignment", sUtils.capitalizeAll(creatureData.alignment?.trim()));
+        sUtils.assignToObject(detailsData, "data.details.race", sUtils.capitalizeAll(creatureData.race?.trim()));
+        sUtils.assignToObject(detailsData, "data.details.type.value", creatureData.type?.trim().toLowerCase());
 
         await actor.update(detailsData);
+    }
+
+    static async setUtilitySpells(actor, creatureData) {
+        for (const actionDescription of creatureData.utilitySpells) {
+            const description = actionDescription.value;
+            const itemData = {};
+
+            itemData.name = "Utility Spells";
+            itemData.type = "feat";
+
+            sUtils.assignToObject(itemData, "data.description.value", description);
+
+            await this.setSpellcastingAsync(description, itemData, actor, sRegex.spellInnateLine);
+            await this.setItemAsync(itemData, actor);
+        }
     }
 
     // ===============================
@@ -709,7 +734,10 @@ export class sbiActor {
             sUtils.assignToObject(actorData, `data.traits.${damageID}.value`, sUtils.capitalizeFirstLetter(customType))
         }
 
-        if (descriptionLower.includes("nonmagical weapons") || descriptionLower.includes("nonmagical attacks")) {
+        // "mundane attacks" is an MCDM thing.
+        if (descriptionLower.includes("nonmagical weapons") 
+            || descriptionLower.includes("nonmagical attacks")
+            || descriptionLower.includes("mundane attacks")) {
             sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, "mgc")
         }
 
@@ -731,56 +759,6 @@ export class sbiActor {
 
         const item = new Item(itemData);
         await actor.createEmbeddedDocuments("Item", [item.toObject()]);
-    }
-
-    // Example: Frost Breath (Recharge 5–6).
-    static setRecharge(text, itemData) {
-        const match = sRegex.recharge.exec(text);
-
-        if (match !== null) {
-            sUtils.assignToObject(itemData, "data.recharge.value", parseInt(match.groups.recharge));
-            sUtils.assignToObject(itemData, "data.recharge.charged", true);
-        }
-    }
-
-    // Example: The hound exhales a 15-foot cone of frost.
-    static setTarget(text, itemData) {
-        const match = sRegex.target.exec(text);
-
-        if (match !== null) {
-            sUtils.assignToObject(itemData, "data.target.value", match.groups.range);
-            sUtils.assignToObject(itemData, "data.target.type", match.groups.shape);
-            sUtils.assignToObject(itemData, "data.target.units", "ft");
-        }
-    }
-
-    // Example: Melee Weapon Attack: +8 to hit, reach 5 ft., one target.
-    static setReach(text, itemData) {
-        const match = sRegex.reach.exec(text);
-
-        if (match !== null) {
-            const reach = parseInt(match.groups.reach);
-
-            sUtils.assignToObject(itemData, "data.range.value", reach);
-            sUtils.assignToObject(itemData, "data.range.units", "ft");
-            sUtils.assignToObject(itemData, "data.actionType", "mwak");
-        }
-    }
-
-    // Example: Ranged Weapon Attack: +7 to hit, range 150/600 ft., one target.
-    static setRange(text, itemData) {
-        const match = sRegex.range.exec(text);
-
-        if (match !== null) {
-            const nearRange = parseInt(match.groups.near);
-            const farRange = parseInt(match.groups.far);
-
-            sUtils.assignToObject(itemData, "data.range.value", nearRange);
-            sUtils.assignToObject(itemData, "data.range.long", farRange);
-            sUtils.assignToObject(itemData, "data.range.units", "ft");
-            sUtils.assignToObject(itemData, "data.actionType", "rwak");
-            sUtils.assignToObject(itemData, "data.ability", "dex");
-        }
     }
 
     // Example:
@@ -827,6 +805,68 @@ export class sbiActor {
 
                 this.setDamageRolls(saveDescription, itemData, actor)
             }
+        }
+    }
+
+    // Example: Dizzying Hex (2/Day; 1st-Level Spell)
+    static setPerDay(text, itemData) {
+        const match = sRegex.perDayDetails.exec(text);
+
+        if (match) {
+            const uses = match.groups.perday;
+            sUtils.assignToObject(itemData, "data.uses.value", parseInt(uses));
+            sUtils.assignToObject(itemData, "data.uses.max", uses);
+            sUtils.assignToObject(itemData, "data.range.per", "day");
+        }
+    }
+
+    // Example: Ranged Weapon Attack: +7 to hit, range 150/600 ft., one target.
+    static setRange(text, itemData) {
+        const match = sRegex.range.exec(text);
+
+        if (match) {
+            const nearRange = parseInt(match.groups.near);
+            const farRange = parseInt(match.groups.far);
+
+            sUtils.assignToObject(itemData, "data.range.value", nearRange);
+            sUtils.assignToObject(itemData, "data.range.long", farRange);
+            sUtils.assignToObject(itemData, "data.range.units", "ft");
+            sUtils.assignToObject(itemData, "data.actionType", "rwak");
+            sUtils.assignToObject(itemData, "data.ability", "dex");
+        }
+    }
+
+    // Example: Frost Breath (Recharge 5–6).
+    static setRecharge(text, itemData) {
+        const match = sRegex.recharge.exec(text);
+
+        if (match) {
+            sUtils.assignToObject(itemData, "data.recharge.value", parseInt(match.groups.recharge));
+            sUtils.assignToObject(itemData, "data.recharge.charged", true);
+        }
+    }
+
+    // Example: Melee Weapon Attack: +8 to hit, reach 5 ft., one target.
+    static setReach(text, itemData) {
+        const match = sRegex.reach.exec(text);
+
+        if (match) {
+            const reach = parseInt(match.groups.reach);
+
+            sUtils.assignToObject(itemData, "data.range.value", reach);
+            sUtils.assignToObject(itemData, "data.range.units", "ft");
+            sUtils.assignToObject(itemData, "data.actionType", "mwak");
+        }
+    }
+
+    // Example: The hound exhales a 15-foot cone of frost.
+    static setTarget(text, itemData) {
+        const match = sRegex.target.exec(text);
+
+        if (match) {
+            sUtils.assignToObject(itemData, "data.target.value", match.groups.range);
+            sUtils.assignToObject(itemData, "data.target.type", match.groups.shape);
+            sUtils.assignToObject(itemData, "data.target.units", "ft");
         }
     }
 
@@ -891,7 +931,7 @@ export class sbiActor {
 
         const versatilematch = sRegex.versatile.exec(description);
 
-        if (versatilematch !== null) {
+        if (versatilematch) {
             itemData.data.damage.versatile = versatilematch.groups.damageroll;
 
             if (itemData.data.properties) {

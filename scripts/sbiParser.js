@@ -45,9 +45,9 @@ export class sbiParser {
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                const nextLine = i < lines.length - 1 ? lines[i + 1] : null;
 
-                if (this.isLineIgnored(line, nextLine)) {
+                // Ignore empty lines.
+                if (!line.length) {
                     continue;
                 }
 
@@ -108,6 +108,7 @@ export class sbiParser {
                     case BlockID.mythicActions:
                     case BlockID.reactions:
                     case BlockID.traits:
+                    case BlockID.utilitySpells:
                     case BlockID.villainActions:
                         this.setActions(value, key, creature);
                         break;
@@ -161,7 +162,7 @@ export class sbiParser {
 
             console.log(creature);
             const actor = await sActor.convertCreatureToActorAsync(creature, selectedFolderId);
-            
+
             // Open the sheet.
             actor.sheet.render(true);
         }
@@ -174,8 +175,13 @@ export class sbiParser {
             lines.shift();
         }
 
-        creature[type] = this.getActionDescriptions(lines)
-            .map(ad => new NameValueData(ad.name, ad.description));
+        if (type === BlockID.villainActions) {
+            creature[type] = this.getVillainActionDescriptions(lines)
+                .map(ad => new NameValueData(ad.name, ad.description));
+        } else {
+            creature[type] = this.getActionDescriptions(lines)
+                .map(ad => new NameValueData(ad.name, ad.description));
+        }
     }
 
     static setArmor(lines, creature) {
@@ -259,6 +265,10 @@ export class sbiParser {
         }
 
         creature.challenge = new ChallengeData(cr, xp);
+
+        // MCDM's "Flee, Mortals!" puts the role alongside the challege rating,
+        // so handle that here.
+        creature.role = sRegex.roleDetails.exec(line)?.groups.role;
     }
 
     // Example: Damage Vulnerabilities bludgeoning, fire
@@ -391,24 +401,7 @@ export class sbiParser {
         creature.type = match.groups.type?.trim();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // TODO: Hook this up. It isn't used right now.
     static async setInitiativeAsync(lines, actor) {
         const line = lines.find(l => l.toLowerCase().startsWith("roll initiative") ||
             l.toLowerCase().startsWith("initiative"));
@@ -513,21 +506,32 @@ export class sbiParser {
         return result;
     }
 
+    static getVillainActionDescriptions(lines) {
+        const result = [];
+        let actionDescription = null;
+
+        for (const line of lines) {
+            const titleMatch = sRegex.villainActionTitle.exec(line);
+
+            if (titleMatch) {
+                actionDescription = new ActionDescription(titleMatch.groups.title, titleMatch.groups.description);
+                result.push(actionDescription);
+            } else {
+                if (actionDescription == null) {
+                    actionDescription = new ActionDescription("Description", line);
+                    result.push(actionDescription);
+                } else {
+                    actionDescription.description = `${actionDescription.description} ${line}`;
+                }
+            }
+        }
+
+        return result;
+    }
+
     // ===============================
     // Utilities
     // ===============================
-
-    static isLineIgnored(line, nextLine) {
-        const ignoreList = [
-            "proficiency bonus"
-        ]
-
-        const lowerLine = line.toLowerCase();
-
-        return line.length == 0 // empty line
-            || (nextLine != null && nextLine.toLowerCase() == lowerLine) // duplicate line
-            || ignoreList.find(ignore => lowerLine.startsWith(ignore)) != null; // ignored line
-    }
 
     static formatForDisplay(text) {
         const textArr = text.replaceAll("•", "\n•").split("\n");

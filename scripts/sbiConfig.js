@@ -1,4 +1,4 @@
-import { statblock } from "../testBlocks/wotc-bugbear.js";
+import { statblock } from "../testBlocks/uberNpc.js";
 
 export const sbiConfig = {};
 

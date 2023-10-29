@@ -24,6 +24,7 @@ export class BlockID {
     static languages = "languages";
     static legendaryActions = "legendaryActions";
     static mythicActions = "mythicActions";
+    static proficiencyBonus = "proficiencyBonus";
     static racialDetails = "racialDetails";
     static reactions = "reactions";
     static savingThrows = "savingThrows";
@@ -31,6 +32,7 @@ export class BlockID {
     static skills = "skills";
     static speed = "speed";
     static traits = "traits";
+    static utilitySpells = "utilitySpells";
     static villainActions = "villainActions";
 }
 
@@ -44,6 +46,7 @@ export const TopBlocks = [
     BlockID.damageVulnerabilities,
     BlockID.health,
     BlockID.languages,
+    BlockID.proficiencyBonus,
     BlockID.racialDetails,
     BlockID.savingThrows,
     BlockID.senses,
@@ -121,7 +124,8 @@ export class CreatureData {
         this.lairActions = [];              // NameValueData[]
         this.legendaryActions = [];         // NameValueData[]
         this.mythicActions = [];            // NameValueData[]
-        this.reactions = [];            // NameValueData[]
+        this.reactions = [];                // NameValueData[]
+        this.role = null;                   // string
         this.savingThrows = [];             // string[]
         this.senses = [];                   // NameValueData[]
         this.specialSense = null;           // string
@@ -131,6 +135,8 @@ export class CreatureData {
         this.alignment = null;              // string
         this.race = null;                   // string
         this.type = null;                   // string
+        this.utilitySpells = [];            // NameValueData[]
+        this.villainActions = [];           // NameValueData[]
     }
 }
 
