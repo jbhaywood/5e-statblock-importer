@@ -5,7 +5,7 @@ import {
     CreatureData,
     ArmorData,
     ChallengeData,
-    HealthData,
+    RollData,
     LanguageData,
     NameValueData,
     ActionDescription,
@@ -112,6 +112,10 @@ export class sbiParser {
                     case BlockID.villainActions:
                         this.setActions(value, key, creature);
                         break;
+                    case BlockID.health:
+                    case BlockID.souls:
+                        this.setRoll(value, key, creature);
+                        break;
                     case BlockID.armor:
                         this.setArmor(value, creature);
                         break;
@@ -132,9 +136,6 @@ export class sbiParser {
                         break;
                     case BlockID.damageVulnerabilities:
                         this.setDamagesAndConditions(value, DamageConditionId.vulnerabilities, creature);
-                        break;
-                    case BlockID.health:
-                        this.setHealth(value, creature);
                         break;
                     case BlockID.languages:
                         this.setLanguages(value, creature);
@@ -291,12 +292,12 @@ export class sbiParser {
         }
     }
 
-    static setHealth(lines, creature) {
+    static setRoll(lines, type, creature) {
         const line = sUtils.combineToString(lines);
-        const match = sRegex.healthDetails.exec(line);
+        const match = sRegex.rollDetails.exec(line);
         if (!match) return;
 
-        creature.health = new HealthData(parseInt(match.groups.hp), match.groups.formula);
+        creature[type] = new RollData(parseInt(match.groups.value), match.groups.formula);
     }
 
     // TODO: use a regex of all known languages, like the one for damage types, so that
@@ -345,10 +346,17 @@ export class sbiParser {
         const matches = [...line.matchAll(sRegex.sensesDetails)];
         creature.senses = matches.map(m => new NameValueData(m.groups.name, m.groups.modifier));
 
-        // Grab anything that isn't a recgonized sense.
-        const special = sUtils.last(line.split(",")).trim();
-        if (!sRegex.sensesDetails.exec(special)) {
-            creature.specialSense = special;
+        const senses = line.split(",").reverse();
+        // Since there can be only one "special" sense, go backwards through the 
+        // list until we find a known sense. This assumes senses are listed from
+        // specific to general, and handles special case senses like "soulsight"
+        // from MCDM statblocks.
+        for (const sense of senses) {
+            if (sRegex.sensesDetails.exec(sense)) {
+                break;
+            }
+
+            creature.specialSense = sense.trim();
         }
     }
 

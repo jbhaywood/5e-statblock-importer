@@ -28,6 +28,7 @@ export class sbiActor {
         await this.setSensesAsync(actor, creatureData);
         await this.setSkillsAsync(actor, creatureData);
         await this.setSpeedAsync(actor, creatureData);
+        await this.setSoulsAsync(actor, creatureData);
         await this.setRacialDetailsAsync(actor, creatureData);
         await this.setUtilitySpells(actor, creatureData);
 
@@ -322,17 +323,13 @@ export class sbiActor {
     }
 
     static async setHealthAsync(actor, creatureData) {
-        await actor.update({
-            "data": {
-                "attributes": {
-                    "hp": {
-                        "value": creatureData.health.hp,
-                        "max": creatureData.health.hp,
-                        "formula": creatureData.health.formula
-                    }
-                }
-            }
-        });
+        const actorData = {};
+
+        sUtils.assignToObject(actorData, "data.attributes.hp.value", creatureData.health.value);
+        sUtils.assignToObject(actorData, "data.attributes.hp.max", creatureData.health.value);
+        sUtils.assignToObject(actorData, "data.attributes.hp.formula", creatureData.health.formula);
+
+        await actor.update(actorData);
     }
 
     static async setLanguagesAsync(actor, creatureData) {
@@ -398,6 +395,23 @@ export class sbiActor {
 
             await actor.update(sUtils.assignToObject({}, `data.skills.${skillId}.value`, skillProf));
         }
+    }
+
+    static async setSoulsAsync(actor, creatureData) {
+        if (!creatureData.souls) return;
+
+        let description = "<p>Demons feast not on food or water, but on souls. These fuel their ";
+        description += "bloodthirsty powers, and while starved for souls, a demon can scarcely think.</p>";
+        description += "<p>A demon’s stat block states the number of souls a given demon ";
+        description += "has already consumed at the beginning of combat, ";
+        description += "both as a die expression and as an average number.</p>";
+
+        const itemData = {};
+        itemData.name = `Souls: ${creatureData.souls.value} (${creatureData.souls.formula})`;
+        itemData.type = "feat";
+
+        sUtils.assignToObject(itemData, "data.description.value", description);
+        await this.setItemAsync(itemData, actor);
     }
 
     static async setSpellcastingAsync(description, itemData, actor, spellRegex) {
@@ -735,7 +749,7 @@ export class sbiActor {
         }
 
         // "mundane attacks" is an MCDM thing.
-        if (descriptionLower.includes("nonmagical weapons") 
+        if (descriptionLower.includes("nonmagical weapons")
             || descriptionLower.includes("nonmagical attacks")
             || descriptionLower.includes("mundane attacks")) {
             sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, "mgc")
@@ -751,10 +765,18 @@ export class sbiActor {
     }
 
     static async setItemAsync(itemData, actor) {
-        // Add a d20 icon if the item doesn't already have an icon just so that it looks 
+        // Add an appropriate icon if the item doesn't already have one just so that it looks 
         // better next to ones that do have an icon.
         if (!itemData.img) {
-            itemData.img = "icons/dice/d20black.svg";
+            if (itemData.type === "weapon") {
+                itemData.img = "icons/svg/sword.svg";
+            } else if (itemData.data.activation?.cost) {
+                itemData.img = "icons/svg/combat.svg";
+            } else if (itemData.type === "feat") {
+                itemData.img = "icons/svg/book.svg";
+            } else {
+                itemData.img = "icons/svg/d20.svg";
+            }
         }
 
         const item = new Item(itemData);

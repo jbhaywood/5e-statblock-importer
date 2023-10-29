@@ -30,6 +30,7 @@ export class BlockID {
     static savingThrows = "savingThrows";
     static senses = "senses";
     static skills = "skills";
+    static souls = "souls";
     static speed = "speed";
     static traits = "traits";
     static utilitySpells = "utilitySpells";
@@ -51,6 +52,7 @@ export const TopBlocks = [
     BlockID.savingThrows,
     BlockID.senses,
     BlockID.skills,
+    BlockID.souls,
     BlockID.speed,
 ]
 
@@ -112,6 +114,7 @@ export class CreatureData {
         this.actions = [];                  // NameValueData[]
         this.armor = null;                  // ArmorData
         this.abilities = [];                // NameValueData[]
+        this.alignment = null;              // string
         this.bonusActions = [];             // NameValueData[]
         this.challenge = null;              // ChallengeData
         this.conditionImmunities = null;    // string[]
@@ -119,7 +122,7 @@ export class CreatureData {
         this.damageResistances = null;      // string[]
         this.damageVulnerabilities = null;  // string[]
         this.features = [];                 // NameValueData[]
-        this.health = null;                 // HealthData
+        this.health = null;                 // RollData
         this.language = null;               // LanguageData
         this.lairActions = [];              // NameValueData[]
         this.legendaryActions = [];         // NameValueData[]
@@ -132,7 +135,7 @@ export class CreatureData {
         this.skills = [];                   // NameValueData[]
         this.speeds = [];                   // NameValueData[]
         this.size = null;                   // string
-        this.alignment = null;              // string
+        this.souls = null;                  // RollData
         this.race = null;                   // string
         this.type = null;                   // string
         this.utilitySpells = [];            // NameValueData[]
@@ -174,12 +177,12 @@ export class ChallengeData {
 }
 
 /*
-hp: int
+value: int
 diceFormula: string
 */
-export class HealthData {
-    constructor(hp, diceFormula) {
-        this.hp = hp;
+export class RollData {
+    constructor(value, diceFormula) {
+        this.value = value;
         this.formula = diceFormula;
     }
 }

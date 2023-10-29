@@ -28,6 +28,7 @@ export class sbiRegex {
     static savingThrows = /^(saving throws|saves)\s(\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b)/i;
     static senses = /^senses.+\d+\s\bft\b/i;
     static skills = /^skills.+[\+-]\d+/i;
+    static souls = /^souls\s\d+/i;
     static speed = /^speed\s\d+\sft/i;
     static traits = /^traits$/i;
     static utilitySpells = /^utility spells$/i;
@@ -36,7 +37,7 @@ export class sbiRegex {
     // Regexes for pulling the details out of the lines we identified using the ones above.
     static armorDetails = /(?<ac>\d+)( \((?<armortype>.+)\))?/i;
     static challengeDetails = /(?<cr>(½|[\d\/]+))\s?(\((?<xp>[\d,]+)\s?xp\))?/i;
-    static healthDetails = /(?<hp>\d+)\s?(\((?<formula>\d+d\d+( ?[\+\-−–] ?\d+)?)\))?/i;
+    static rollDetails = /(?<value>\d+)\s?(\((?<formula>\d+d\d+(\s?[\+\-−–]\s?\d+)?)\))?/i;
     static perDayDetails = /(?<perday>\d+)\/day/i;
     static roleDetails = /cr\s\d+\s(?<role>\w+)/i;
     static savingThrowDetails = /must (make|succeed on) a dc (?<savedc>\d+) (?<saveability>\w+) (?<savetext>saving throw|save)/i;
@@ -100,6 +101,7 @@ export class sbiRegex {
         { r: this.senses, id: BlockID.senses },
         { r: this.skills, id: BlockID.skills },
         { r: this.speed, id: BlockID.speed },
+        { r: this.souls, id: BlockID.souls },
         { r: this.traits, id: BlockID.traits },
         { r: this.utilitySpells, id: BlockID.utilitySpells },
         { r: this.villainActions, id: BlockID.villainActions },
