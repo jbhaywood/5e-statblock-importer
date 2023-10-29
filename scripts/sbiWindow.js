@@ -62,10 +62,10 @@ export class sbiWindow extends Application {
             const selectedFolder = selectedFolderName == noneFolder ? null : actorFolders.find(f => f.name === selectedFolderName);
 
             if (sbiConfig.options.debug) {
-                await sbiParser.parseInput(lines, selectedFolder.id);
+                await sbiParser.parseInput(lines, selectedFolder?.id);
             } else {
                 try {
-                    await sbiParser.parseInput(lines, selectedFolder.id);
+                    await sbiParser.parseInput(lines, selectedFolder?.id);
                 } catch (error) {
                     ui.notifications.error("5E STATBLOCK IMPORTER: An error has occured. Please report it using the module link so it can get fixed.")
                 }
