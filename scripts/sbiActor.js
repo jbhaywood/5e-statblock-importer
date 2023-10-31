@@ -373,10 +373,10 @@ export class sbiActor {
             if (name === "darkvision") {
                 sUtils.assignToObject(actorData, "token.dimSight", modifier);
             }
+        }
 
-            if (creatureData.specialSense) {
-                sUtils.assignToObject(actorData, "data.attributes.senses.special", sUtils.capitalizeAll(creatureData.specialSense));
-            }
+        if (creatureData.specialSense) {
+            sUtils.assignToObject(actorData, "data.attributes.senses.special", sUtils.capitalizeAll(creatureData.specialSense));
         }
 
         await actor.update(actorData);
