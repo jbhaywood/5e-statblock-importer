@@ -325,9 +325,9 @@ export class sbiActor {
     static async setHealthAsync(actor, creatureData) {
         const actorData = {};
 
-        sUtils.assignToObject(actorData, "data.attributes.hp.value", creatureData.health.value);
-        sUtils.assignToObject(actorData, "data.attributes.hp.max", creatureData.health.value);
-        sUtils.assignToObject(actorData, "data.attributes.hp.formula", creatureData.health.formula);
+        sUtils.assignToObject(actorData, "data.attributes.hp.value", creatureData.health?.value || 0);
+        sUtils.assignToObject(actorData, "data.attributes.hp.max", creatureData.health?.value || 0);
+        sUtils.assignToObject(actorData, "data.attributes.hp.formula", creatureData.health?.formula || 0);
 
         await actor.update(actorData);
     }

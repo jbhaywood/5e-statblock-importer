@@ -6,14 +6,14 @@ export class sbiRegex {
     // that happens to start with same the word(s).
     static armor = /^((armor|armour) class)\s\d+/i;
     static actions = /^actions$/i;
-    static abilities = /^(\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b)$/i;
+    static abilities = /^(\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b)/i;
     static bonusActions = /^bonus actions$/i;
     static challenge = /^(challenge|\bcr\b|challenge rating)\s\d+/i;
     static conditionImmunities = /^condition immunities\s/i;
     static damageImmunities = /^damage immunities\s/i;
     static damageResistances = /^damage resistances\s/i;
     static damageVulberabilities = /^damage vulnerabilities\s/i;
-    static health = /^(hit points|\bhp\b)\s\d+\s/i;
+    static health = /^(hit points|\bhp\b)\s\d+/i;
     static lairActions = /^lair actions$/i;
     static languages = /^languages\s/i;
     static legendaryActions = /^legendary actions$/i;
@@ -54,7 +54,7 @@ export class sbiRegex {
     // ([\w\d\-+,;']+\s?){0,3}                   <- Represents the words that follow the first word, using the same regex for the allowed characters.
     //                                              We assume the title only has 0-3 words following it, otherwise it's probably a sentence.
     // (\([\w –\-\/]+\))?                        <- Represents an optional bit in parentheses, like '(Recharge 5-6)'.
-    static blockTitle = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;']+\s?){0,3}(\((?!spell save)[^)]+\))?)[.!]/;
+    static blockTitle = /^(([A-Z][\w\d\-+,;'’]+[\s\-]?)((of|and|the|from|in|at|on|with|to|by|into)\s)?([\w\d\-+,;'’]+\s?){0,3}(\((?!spell save)[^)]+\))?)[.!]/;
     static villainActionTitle = /(?<title>^Action\s[123]:\s.+[.!?])\s+(?<description>.*)/;
     // The rest of these are utility regexes to pull out specific data.
     static abilityNames = /\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b/ig;
