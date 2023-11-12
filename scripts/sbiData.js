@@ -117,10 +117,10 @@ export class CreatureData {
         this.alignment = null;              // string
         this.bonusActions = [];             // NameValueData[]
         this.challenge = null;              // ChallengeData
-        this.conditionImmunities = null;    // string[]
-        this.damageImmunities = null;       // string[]
-        this.damageResistances = null;      // string[]
-        this.damageVulnerabilities = null;  // string[]
+        this.conditionImmunities = null;    // string
+        this.damageImmunities = null;       // string
+        this.damageResistances = null;      // string
+        this.damageVulnerabilities = null;  // string
         this.features = [];                 // NameValueData[]
         this.health = null;                 // RollData
         this.language = null;               // LanguageData

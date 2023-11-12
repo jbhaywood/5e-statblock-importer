@@ -333,6 +333,8 @@ export class sbiActor {
     }
 
     static async setLanguagesAsync(actor, creatureData) {
+        if (!creatureData.language) return;
+        
         const knownValues = creatureData.language.knownLanguages.map(str => this.convertLanguage(str));
         const unknownValues = creatureData.language.unknownLanguages.map(str => this.convertLanguage(str));
 
