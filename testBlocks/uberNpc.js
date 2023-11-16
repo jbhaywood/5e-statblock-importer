@@ -32,23 +32,39 @@ Spellcasting. The lich is an 18th-­‐level spellcaster. Its
 spellcasting ability is Intelligence (spell save DC 20, +12
 to hit with spell attacks). The lich has the following
 wizard spells prepared:
-Cantrips (at will): mage hand, prestidigitation, ray of
-frost
-1st level (4 slots): detect magic, magic missile, shield,
-thunderwave
+Cantrips (at will): mage hand, prestidigitation
+1st level (4 slots): detect magic, magic missile, shield
 2nd level (3 slots): acid arrow, detect thoughts,
 invisibility, mirror image
 3rd level (3 slots): animate dead, counterspell, dispel
 magic, fireball
 4th level (3 slots): blight, dimension door
-5th level (3 slots): cloudkill, scrying
+5th level (3 slots): cloudkill
 6th level (1 slot): disintegrate, globe of invulnerability
 7th level (1 slot): finger of death, plane shift
 8th level (1 slot): dominate monster, power word stun
 9th level (1 slot): power word kill
 Turn Resistance. The lich has advantage on saving
 throws against any effect that turns undead.
+Innate Spellcasting. The rakshasa’s innate spellcasting
+ability is Charisma (spell save DC 18, +10 to hit with
+spell attacks). The rakshasa can innately cast the
+following spells, requiring no material components:
+At will: disguise self, minor illusion
+3/day each: charm person, major image, suggestion
+1/day each: dominate person, fly, true
+seeing
 Actions
+Multiattack. The ruinant makes three Bloodletting
+Claws attacks.
+Bloodletting Claws. Melee Weapon Attack: +7 to hit, reach
+5 ft., one creature. Hit: 7 (1d6 + 4) piercing damage plus
+7 (2d6) necrotic damage, and the target can’t take reactions
+this turn.
+Javelin. Melee or Ranged Weapon Attack: +4 to hit,
+reach 5 ft. or range 30/120 ft., one target. Hit: 9 (2d6 +
+2) piercing damage in melee or 5 (1d6 + 2) piercing
+damage at range.
 Paralyzing Touch. Melee Spell Attack: +12 to hit, reach
 5 ft., one creature. Hit: 10 (3d6) cold damage. The
 target must succeed on a DC 18 Constitution saving
@@ -62,8 +78,6 @@ can be used at a time and only at the end of another
 creature’s turn. The lich regains spent legendary
 actions at the start of its turn.
 Cantrip. The lich casts a cantrip.
-Paralyzing Touch (Costs 2 Actions). The lich uses its
-Paralyzing Touch.
 Frightening Gaze (Costs 2 Actions). The lich fixes its
 gaze on one creature it can see within 10 feet of it.
 The target must succeed on a DC 18 Wisdom saving
@@ -134,7 +148,7 @@ UTILITY SPELLS
 In addition to any other spells in this stat block, the hag can
 cast the following spells, using Charisma as the spellcasting
 ability (spell save DC 14):
-At will: alter self A, dancing lights A, minor illusion A
+At will: alter self A, dancing lights A
 3/day each: animal messenger A, legend lore +, speak
 with animals A
 1/day: scrying +`;

@@ -1,13 +1,3 @@
-export class ActionDescription {
-    name;
-    description;
-
-    constructor(name, description) {
-        this.name = name;
-        this.description = description;
-    }
-}
-
 export class BlockID {
     static armor = "armor";
     static actions = "actions";
@@ -90,56 +80,44 @@ export const KnownLanguages = [
     "undercommon"
 ];
 
-// Creature Properties
-//  - Name
-//  - Armor (value, type)
-//  - Challenge (value)
-//  - Racial Details (alignment, race, type, size)
-//  - Hit Points (value, dice formula)
-//  - Movement (types/values, units, can hover)
-//  - Senses (types/values, units, special)
-//  - Abilities (name, value, proficient)
-//  - Damage Immunities (types)
-//  - Damage Resistances (types)
-//  - Damage Vulnerabilities (types)
-//  - Condition Immunities (types)
-//  - Languages (types)
-//  - Skills Proficiencies (names/proficiency types) (ignore the ones they aren't proficient in, those will get default values)
-//  - Spell (name, level)
-//  - Action (name, type, description, icon, damage, damage type, range, uses)
-
 export class CreatureData {
     constructor(name) {
-        this.name = name;                   // string
-        this.actions = [];                  // NameValueData[]
-        this.armor = null;                  // ArmorData
-        this.abilities = [];                // NameValueData[]
-        this.alignment = null;              // string
-        this.bonusActions = [];             // NameValueData[]
-        this.challenge = null;              // ChallengeData
-        this.conditionImmunities = null;    // string
-        this.damageImmunities = null;       // string
-        this.damageResistances = null;      // string
-        this.damageVulnerabilities = null;  // string
-        this.features = [];                 // NameValueData[]
-        this.health = null;                 // RollData
-        this.language = null;               // LanguageData
-        this.lairActions = [];              // NameValueData[]
-        this.legendaryActions = [];         // NameValueData[]
-        this.mythicActions = [];            // NameValueData[]
-        this.reactions = [];                // NameValueData[]
-        this.role = null;                   // string
-        this.savingThrows = [];             // string[]
-        this.senses = [];                   // NameValueData[]
-        this.specialSense = null;           // string
-        this.skills = [];                   // NameValueData[]
-        this.speeds = [];                   // NameValueData[]
-        this.size = null;                   // string
-        this.souls = null;                  // RollData
-        this.race = null;                   // string
-        this.type = null;                   // string
-        this.utilitySpells = [];            // NameValueData[]
-        this.villainActions = [];           // NameValueData[]
+        this.name = name;                           // string
+        this.actions = [];                          // NameValueData[]
+        this.armor = null;                          // ArmorData
+        this.abilities = [];                        // NameValueData[]
+        this.alignment = null;                      // string
+        this.bonusActions = [];                     // NameValueData[]
+        this.challenge = null;                      // ChallengeData
+        this.features = [];                         // NameValueData[]
+        this.health = null;                         // RollData
+        this.language = null;                       // LanguageData
+        this.lairActions = [];                      // NameValueData[]
+        this.legendaryActions = [];                 // NameValueData[]
+        this.mythicActions = [];                    // NameValueData[]
+        this.reactions = [];                        // NameValueData[]
+        this.role = null;                           // string           (MCDM)
+        this.savingThrows = [];                     // string[]
+        this.senses = [];                           // NameValueData[]
+        this.specialSense = null;                   // string
+        this.skills = [];                           // NameValueData[]
+        this.speeds = [];                           // NameValueData[]
+        this.spellcasting = [];                     // NameValueData[]
+        this.innateSpellcasting = [];               // NameValueData[]
+        this.size = null;                           // string
+        this.souls = null;                          // RollData
+        this.race = null;                           // string
+        this.type = null;                           // string
+        this.utilitySpells = [];                    // NameValueData[]  (MCDM)
+        this.villainActions = [];                   // NameValueData[]  (MCDM)
+        this.standardConditionImmunities = [];      // string[]
+        this.standardDamageImmunities = [];         // string[]
+        this.standardDamageResistances = [];        // string[]
+        this.standardDamageVulnerabilities = [];    // string[]
+        this.specialConditionImmunities = null;     // string
+        this.specialDamageImmunities = null;        // string
+        this.specialDamageResistances = null;       // string
+        this.specialDamageVulnerabilities = null;   // string
     }
 }
 

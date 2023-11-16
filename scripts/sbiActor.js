@@ -23,23 +23,23 @@ export class sbiActor {
         await this.setFeaturesAsync(actor, creatureData);
         await this.setHealthAsync(actor, creatureData);
         await this.setLanguagesAsync(actor, creatureData);
+        await this.setRacialDetailsAsync(actor, creatureData);
         await this.setRoleAsync(actor, creatureData);
         await this.setSavingThrowsAsync(actor, creatureData);
         await this.setSensesAsync(actor, creatureData);
         await this.setSkillsAsync(actor, creatureData);
         await this.setSpeedAsync(actor, creatureData);
+        await this.setSpells(actor, creatureData);
         await this.setSoulsAsync(actor, creatureData);
-        await this.setRacialDetailsAsync(actor, creatureData);
-        await this.setUtilitySpells(actor, creatureData);
 
         return actor;
     }
 
     static async setActionsAsync(actor, creatureData) {
-        for (const actionDescription of creatureData.actions) {
-            const name = actionDescription.name;
+        for (const actionData of creatureData.actions) {
+            const name = actionData.name;
             const lowerName = name.toLowerCase();
-            const description = actionDescription.value;
+            const description = actionData.value;
 
             const itemData = {};
             itemData.name = sUtils.capitalizeAll(name);
@@ -154,9 +154,9 @@ export class sbiActor {
     static async setMinorActionsAsync(actor, type, creatureData) {
         // NOTE: If we hit an exception here that 'creature[type]' is undefined, make sure
         // to add that type to the CreatureData constructor with a default array value.
-        for (const actionDescription of creatureData[type]) {
-            const name = actionDescription.name;
-            const description = actionDescription.value;
+        for (const actionData of creatureData[type]) {
+            const name = actionData.name;
+            const description = actionData.value;
 
             const itemData = {};
             itemData.name = sUtils.capitalizeAll(name);
@@ -231,76 +231,48 @@ export class sbiActor {
     static async setChallengeAsync(actor, creatureData) {
         if (!creatureData.challenge) return;
 
-        const actorData = {};
-        sUtils.assignToObject(actorData, "data.details.cr", creatureData.challenge.cr);
+        const actorObject = {};
+        sUtils.assignToObject(actorObject, "data.details.cr", creatureData.challenge.cr);
 
         if (creatureData.challenge.xp) {
-            sUtils.assignToObject(actorData, "data.details.xp.value", creatureData.challenge.xp);
+            sUtils.assignToObject(actorObject, "data.details.xp.value", creatureData.challenge.xp);
         }
 
-        await actor.update(actorData);
+        await actor.update(actorObject);
     }
 
     static async setDamagesAndConditionsAsync(actor, creatureData) {
-        if (creatureData.conditionImmunities) {
-            const conditionTypes = [...creatureData.conditionImmunities.matchAll(sRegex.conditionTypes)]
-                .map(arr => arr[0].toLowerCase())
-            await actor.update(sUtils.assignToObject({}, "data.traits.ci.value", conditionTypes));
+        const actorObject = {};
+
+        if (creatureData.standardConditionImmunities.length) {
+            await actor.update(sUtils.assignToObject({}, "data.traits.ci.value", creatureData.standardConditionImmunities));
         }
 
-        if (creatureData.damageImmunities) {
-            const actorData = {};
-            this.setDamageData(creatureData.damageImmunities, "di", actorData);
-            await actor.update(actorData);
+        if (creatureData.specialConditionImmunities) {
+            sUtils.assignToObject(actorObject, "data.traits.ci.custom", sUtils.capitalizeFirstLetter(creatureData.specialConditionImmunities))
         }
 
-        if (creatureData.damageResistances) {
-            const actorData = {};
-            this.setDamageData(creatureData.damageResistances, "dr", actorData);
-            await actor.update(actorData);
-        }
+        await this.setDamageDataAsync(creatureData.standardDamageImmunities, creatureData.specialDamageImmunities, "di", actorObject);
+        await this.setDamageDataAsync(creatureData.standardDamageResistances, creatureData.specialDamageResistances, "dr", actorObject);
+        await this.setDamageDataAsync(creatureData.standardDamageVulnerabilities, creatureData.specialDamageVulnerabilities, "dv", actorObject);
 
-        if (creatureData.damageVulnerabilities) {
-            const actorData = {};
-            this.setDamageData(creatureData.damageVulnerabilities, "dv", actorData);
-            await actor.update(actorData);
-        }
+        await actor.update(actorObject);
     }
 
     static async setFeaturesAsync(actor, creatureData) {
-        for (const actionDescription of creatureData.features) {
-            const name = actionDescription.name;
-            const lowerName = name.toLowerCase();
-            const description = actionDescription.value;
-
+        for (const featureData of creatureData.features) {
+            const name = featureData.name;
+            const nameLower = name.toLowerCase();
+            const description = featureData.value;
             const itemData = {};
+
             itemData.name = sUtils.capitalizeAll(name);
             itemData.type = "feat";
-            itemData.img = await sUtils.getImgFromPackItemAsync(lowerName);
+            itemData.img = await sUtils.getImgFromPackItemAsync(nameLower);
 
             sUtils.assignToObject(itemData, "data.description.value", description);
 
-            if (lowerName.includes("innate spellcasting")) {
-                // Example:
-                // Innate Spellcasting. The aridni's innate spellcasting ability is Charisma (spell save DC 14). 
-                // It can innately cast the following spells: 
-                // At will: dancing lights, detect magic, invisibility 
-                // 3/day: charm person, faerie fire, mage armor 
-                // 1/day: spike growth
-                await this.setSpellcastingAsync(description, itemData, actor, sRegex.spellInnateLine);
-            } else if (lowerName === "spellcasting") {
-                // Example:
-                // Spellcasting. The sphinx is a 9th-­‐level spellcaster. Its spellcasting ability is Intelligence (spell save DC 16, +8
-                // to hit with spell attacks). It requires no material components to cast its spells. The sphinx has the
-                // following wizard spells prepared:
-                // Cantrips (at will): mage hand, minor illusion, prestidigitation
-                // 1st level (4 slots): detect magic, identify, shield
-                // 2nd level (3 slots): darkness, locate object, suggestion
-                // 3rd level (3 slots): dispel magic, remove curse, tongues
-                // 4th level (3 slots): banishment, greater invisibility
-                // 5th level (1 slot): legend lore
-                await this.setSpellcastingAsync(description, itemData, actor, sRegex.spellLine);
-            } else if (lowerName.startsWith("legendary resistance")) {
+            if (nameLower.startsWith("legendary resistance")) {
                 // Example:
                 // Legendary Resistance (3/day)
                 const resistanceCountRegex = /\((?<perday>\d+)\/day\)/i;
@@ -323,26 +295,26 @@ export class sbiActor {
     }
 
     static async setHealthAsync(actor, creatureData) {
-        const actorData = {};
+        const actorObject = {};
 
-        sUtils.assignToObject(actorData, "data.attributes.hp.value", creatureData.health?.value || 0);
-        sUtils.assignToObject(actorData, "data.attributes.hp.max", creatureData.health?.value || 0);
-        sUtils.assignToObject(actorData, "data.attributes.hp.formula", creatureData.health?.formula || 0);
+        sUtils.assignToObject(actorObject, "data.attributes.hp.value", creatureData.health?.value || 0);
+        sUtils.assignToObject(actorObject, "data.attributes.hp.max", creatureData.health?.value || 0);
+        sUtils.assignToObject(actorObject, "data.attributes.hp.formula", creatureData.health?.formula || 0);
 
-        await actor.update(actorData);
+        await actor.update(actorObject);
     }
 
     static async setLanguagesAsync(actor, creatureData) {
         if (!creatureData.language) return;
-        
+
         const knownValues = creatureData.language.knownLanguages.map(str => this.convertLanguage(str));
         const unknownValues = creatureData.language.unknownLanguages.map(str => this.convertLanguage(str));
 
-        const actorData = {};
-        sUtils.assignToObject(actorData, "data.traits.languages.value", knownValues);
-        sUtils.assignToObject(actorData, "data.traits.languages.custom", unknownValues.join(";"));
+        const actorObject = {};
+        sUtils.assignToObject(actorObject, "data.traits.languages.value", knownValues);
+        sUtils.assignToObject(actorObject, "data.traits.languages.custom", sUtils.capitalizeFirstLetter(unknownValues.join(";")));
 
-        await actor.update(actorData);
+        await actor.update(actorObject);
     }
 
     static async setRoleAsync(actor, creatureData) {
@@ -352,36 +324,36 @@ export class sbiActor {
     }
 
     static async setSavingThrowsAsync(actor, creatureData) {
-        const actorData = {};
+        const actorObject = {};
 
         for (const savingThrow of creatureData.savingThrows) {
             const name = savingThrow.toLowerCase();
             const propPath = `data.abilities.${name}.proficient`;
-            sUtils.assignToObject(actorData, propPath, 1);
+            sUtils.assignToObject(actorObject, propPath, 1);
         }
 
-        await actor.update(actorData);
+        await actor.update(actorObject);
     }
 
     static async setSensesAsync(actor, creatureData) {
-        const actorData = {};
+        const actorObject = {};
 
         for (const sense of creatureData.senses) {
             const name = sense.name.toLowerCase();
             const modifier = parseInt(sense.value);
 
-            sUtils.assignToObject(actorData, `data.attributes.senses.${name}`, modifier);
+            sUtils.assignToObject(actorObject, `data.attributes.senses.${name}`, modifier);
 
             if (name === "darkvision") {
-                sUtils.assignToObject(actorData, "token.dimSight", modifier);
+                sUtils.assignToObject(actorObject, "token.dimSight", modifier);
             }
         }
 
         if (creatureData.specialSense) {
-            sUtils.assignToObject(actorData, "data.attributes.senses.special", sUtils.capitalizeAll(creatureData.specialSense));
+            sUtils.assignToObject(actorObject, "data.attributes.senses.special", sUtils.capitalizeAll(creatureData.specialSense));
         }
 
-        await actor.update(actorData);
+        await actor.update(actorObject);
     }
 
     static async setSkillsAsync(actor, creatureData) {
@@ -399,6 +371,32 @@ export class sbiActor {
         }
     }
 
+    static async setSpells(actor, creatureData) {
+        let name;
+        const itemObject = {};
+
+        if (creatureData.spellcasting.length) {
+            name = "Spellcasting";
+            await this.setSpellcastingAsync(creatureData.spellcasting, itemObject, actor, true);
+        }
+
+        if (creatureData.innateSpellcasting.length) {
+            name = "Innate Spellcasting";
+            await this.setSpellcastingAsync(creatureData.innateSpellcasting, itemObject, actor, false);
+        }
+
+        if (creatureData.utilitySpells.length) {
+            name = "Utility Spells";
+            await this.setSpellcastingAsync(creatureData.utilitySpells, itemObject, actor, false);
+        }
+
+        itemObject.name = sUtils.capitalizeAll(name);
+        itemObject.type = "feat";
+        itemObject.img = await sUtils.getImgFromPackItemAsync(lowerName);
+        
+        await this.setItemAsync(itemObject, actor);
+    }
+
     static async setSoulsAsync(actor, creatureData) {
         if (!creatureData.souls) return;
 
@@ -414,134 +412,6 @@ export class sbiActor {
 
         sUtils.assignToObject(itemData, "data.description.value", description);
         await this.setItemAsync(itemData, actor);
-    }
-
-    static async setSpellcastingAsync(description, itemData, actor, spellRegex) {
-        const spellMatches = [...description.matchAll(spellRegex)];
-        let spellDatas = [];
-
-        // Set spell level
-        const spellLevelMatch = sRegex.spellLevel.exec(description);
-
-        if (spellLevelMatch) {
-            await actor.update(sUtils.assignToObject({}, "data.details.spellLevel", parseInt(spellLevelMatch.groups.level)));
-        }
-
-        // Put spell groups on their own lines in the description so that it reads better.
-        if (spellMatches.length) {
-            const descriptionLines = [];
-            let lastIndex = description.length;
-
-            // Go backwards through the matches and separate the header from the spells so that the header is bolded.
-            for (let index = spellMatches.length - 1; index >= 0; index--) {
-                const match = spellMatches[index];
-                const spellNames = description
-                    .slice(match.index, lastIndex)
-                    .slice(match[0].length)
-                    .split(/,(?![^\(]*\))/) // split on commas that are outside of parenthesis
-                    .map(spell => spell.trim()) // remove spaces
-                    .map(spell => sUtils.trimStringEnd(spell, ".")) // remove end period
-                    .map(spell => spell.replace(/\s[ABR\+]$/, "")) // remove MCDM activation symbols
-                    .map(spell => sUtils.capitalizeAll(spell)); // capitalize words
-
-                descriptionLines.push(`<p><b>${match[0]}</b> ${spellNames.join(", ")}</p>`);
-                lastIndex = match.index;
-
-                const slots = this.getGroupValue("slots", [...match[0].matchAll(sRegex.spellcastingDetails)]);
-                const perday = this.getGroupValue("perday", [...match[0].matchAll(sRegex.spellcastingDetails)]);
-                let spellType;
-                let spellCount;
-
-                if (slots) {
-                    spellType = "slots";
-                    spellCount = parseInt(slots);
-                } else if (perday) {
-                    spellType = "innate";
-                    spellCount = parseInt(perday);
-                }
-
-                for (const spellName of spellNames) {
-                    // Remove text in parenthesis when storing the spell name for lookup later.
-                    let cleanName = spellName.replace(/\(.*\)/, "").trim()
-
-                    spellDatas.push({
-                        "name": cleanName,
-                        "type": spellType,
-                        "count": spellCount
-                    });
-                }
-            }
-
-            const introDescription = `<p>${description.slice(0, spellMatches[0].index)}</p>`;
-            const fullDescription = introDescription.concat(descriptionLines.reverse().join("\n"));
-            sUtils.assignToObject(itemData, "data.description.value", fullDescription);
-        } else {
-            // Some spell casting description bury the spell in the description, like Mehpits.
-            // Example: The mephit can innately cast fog cloud, requiring no material components.
-            var match = sRegex.spellInnateSingle.exec(description);
-
-            if (match) {
-                const spell = await sUtils.getItemFromPacksAsync(match.groups.spellname, "spell");
-
-                if (spell) {
-                    const perday = this.getGroupValue("perday", [...itemData.name.matchAll(sRegex.spellcastingDetails)]);
-
-                    spellDatas.push({
-                        "name": spell.name,
-                        "type": "innate",
-                        "count": parseInt(perday)
-                    });
-                }
-            }
-        }
-
-        // Set spellcasting ability.
-        let spellcastingAbility = this.getGroupValue("ability1", [...description.matchAll(sRegex.spellcastingDetails)]);
-
-        if (spellcastingAbility == null) {
-            spellcastingAbility = this.getGroupValue("ability2", [...description.matchAll(sRegex.spellcastingDetails)]);
-        }
-
-        if (spellcastingAbility != null) {
-            const actorData = sUtils.assignToObject({}, "data.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility));
-            await actor.update(actorData)
-        }
-
-        // Add spells to actor.
-        if (spellDatas.length) {
-            for (const spellData of spellDatas) {
-                const spell = await sUtils.getItemFromPacksAsync(spellData.name, "spell");
-
-                if (spell) {
-                    if (spellData.type == "slots") {
-                        // Update the actor's number of slots per level.
-                        let spellObject = {};
-                        sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellData.count);
-                        sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellData.count);
-                        sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellData.count);
-
-                        await actor.update(spellObject);
-                    } else if (spellData.type = "innate") {
-                        // Separate the 'per day' spells from the 'at will' spells.
-                        if (spellData.count) {
-                            sUtils.assignToObject(spell, "data.uses.value", spellData.count);
-                            sUtils.assignToObject(spell, "data.uses.max", spellData.count);
-                            sUtils.assignToObject(spell, "data.uses.per", "day");
-                            sUtils.assignToObject(spell, "data.preparation.mode", "innate");
-                        } else {
-                            sUtils.assignToObject(spell, "data.preparation.mode", "atwill");
-                        }
-
-                        sUtils.assignToObject(spell, "data.preparation.prepared", true);
-                    }
-
-                    // Add the spell to the character sheet if it doesn't exist already.
-                    if (!actor.items.getName(spell.name)) {
-                        await actor.createEmbeddedDocuments("Item", [spell]);
-                    }
-                }
-            }
-        }
     }
 
     static async setSpeedAsync(actor, creatureData) {
@@ -617,18 +487,123 @@ export class sbiActor {
         await actor.update(detailsData);
     }
 
-    static async setUtilitySpells(actor, creatureData) {
-        for (const actionDescription of creatureData.utilitySpells) {
-            const description = actionDescription.value;
-            const itemData = {};
+    static async setSpellcastingAsync(spellDatas, itemData, actor, isSpellcasting) {
+        const description = spellDatas[0].value;
+        const spells = spellDatas.slice(1);
 
-            itemData.name = "Utility Spells";
-            itemData.type = "feat";
+        let spellObjects = [];
 
-            sUtils.assignToObject(itemData, "data.description.value", description);
+        // Set spell level
+        const spellLevelMatch = sRegex.spellLevel.exec(description);
 
-            await this.setSpellcastingAsync(description, itemData, actor, sRegex.spellInnateLine);
-            await this.setItemAsync(itemData, actor);
+        if (spellLevelMatch) {
+            sUtils.assignToObject(itemData, "data.details.spellLevel", parseInt(spellLevelMatch.groups.level));
+        }
+
+        if (spells.length) {
+            const descriptionLines = [];
+            descriptionLines.push(`<p>${description}</p>`);
+
+            // Put spell groups on their own lines in the description so that it reads better.
+            for (const spell of spells) {
+                descriptionLines.push(`<p><b>${spell.name}</b>: ${spell.value.join(", ")}</p>`);
+
+                const spellLevel = spell.name.toLowerCase();
+                const spellNames = spell.value;
+
+                const slots = this.getGroupValue("slots", [...spellLevel.matchAll(sRegex.spellcastingDetails)]);
+                const perday = this.getGroupValue("perday", [...spellLevel.matchAll(sRegex.spellcastingDetails)]);
+
+                let spellType;
+                let spellCount;
+
+                if (slots) {
+                    spellType = "slots";
+                    spellCount = parseInt(slots);
+                } else if (perday) {
+                    spellType = "innate";
+                    spellCount = parseInt(perday);
+                } else if (spellLevel.includes("at will")) {
+                    spellType = isSpellcasting ? "cantrip" : "at will";
+                }
+
+                for (const spellName of spellNames) {
+                    // Remove text in parenthesis when storing the spell name for lookup later.
+                    let cleanName = spellName.replace(/\(.*\)/, "").trim()
+
+                    spellObjects.push({
+                        "name": cleanName,
+                        "type": spellType,
+                        "count": spellCount
+                    });
+                }
+            }
+
+            sUtils.assignToObject(itemData, "data.description.value", descriptionLines.join(""));
+        } else {
+            // Some spell casting description bury the spell in the description, like Mehpits.
+            // Example: The mephit can innately cast fog cloud, requiring no material components.
+            var match = sRegex.spellInnateSingle.exec(description);
+
+            if (match) {
+                const spell = await sUtils.getItemFromPacksAsync(match.groups.spellname, "spell");
+
+                if (spell) {
+                    const perday = this.getGroupValue("perday", [...itemData.name.matchAll(sRegex.spellcastingDetails)]);
+
+                    spellObjects.push({
+                        "name": spell.name,
+                        "type": "innate",
+                        "count": parseInt(perday)
+                    });
+                }
+            }
+        }
+
+        // Set spellcasting ability.
+        let spellcastingAbility = this.getGroupValue("ability1", [...description.matchAll(sRegex.spellcastingDetails)]);
+
+        if (spellcastingAbility == null) {
+            spellcastingAbility = this.getGroupValue("ability2", [...description.matchAll(sRegex.spellcastingDetails)]);
+        }
+
+        if (spellcastingAbility != null) {
+            sUtils.assignToObject(itemData, "data.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility));
+        }
+
+        // Add spells to actor.
+        for (const spellData of spellObjects) {
+            const spell = await sUtils.getItemFromPacksAsync(spellData.name, "spell");
+
+            if (spell) {
+                if (spellData.type === "slots") {
+                    // Update the actor's number of slots per level.
+                    let spellObject = {};
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellData.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellData.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellData.count);
+
+                    await actor.update(spellObject);
+                } else if (spellData.type === "innate") {
+                    if (spellData.count) {
+                        sUtils.assignToObject(spell, "data.uses.value", spellData.count);
+                        sUtils.assignToObject(spell, "data.uses.max", spellData.count);
+                        sUtils.assignToObject(spell, "data.uses.per", "day");
+                        sUtils.assignToObject(spell, "data.preparation.mode", "innate");
+                    } else {
+                        sUtils.assignToObject(spell, "data.preparation.mode", "atwill");
+                    }
+                } else if (spellData.type === "at will") {
+                    sUtils.assignToObject(spell, "data.preparation.mode", "atwill");
+                } else if (spellData.type === "cantrip") {
+                    // Don't need to set anything special because it should already be set on the spell we retrieved from the pack.
+                }
+
+                // Add the spell to the character sheet if it doesn't exist already.
+                if (!actor.items.getName(spell.name)) {
+                    await actor.createEmbeddedDocuments("Item", [spell]);
+                }
+            }
         }
     }
 
@@ -719,50 +694,34 @@ export class sbiActor {
         }
     }
 
-    static setDamageData(description, damageID, actorData) {
-        const descriptionLower = description.toLowerCase();
+    static async setDamageDataAsync(standardDamages, specialDamage, damageID, actorData) {
+        if (standardDamages.length) {
+            sUtils.assignToObject(actorData, `data.traits.${damageID}.value`, standardDamages)
+        }
 
-        // Parse out the known damage types.
-        const knownTypes = [...description.matchAll(sRegex.damageTypes)]
-            .filter(arr => arr[0].length)
-            .map(arr => arr[0].toLowerCase());
+        if (specialDamage) {
+            const specialDamagesLower = specialDamage.toLowerCase();
 
-        // Now see if there is any custom text we should add.
-        let customType = null;
-        // Split on ";" first for lines like "poison; bludgeoning, piercing, and slashing from nonmagical attacks"
-        const strings = descriptionLower.split(";");
-        if (strings.length === 2) {
-            customType = strings[1].trim();
-        } else {
-            // Handle something like "piercing from magic weapons wielded by good creatures"
-            // by taking out the known types, commas, and spaces, and seeing if there's anything left.
-            const descLeftover = descriptionLower.replace(sRegex.damageTypes, "").replace(/,/g, "").trim();
-            if (descLeftover) {
-                customType = descriptionLower;
+            // "mundane attacks" is an MCDM thing.
+            if (specialDamagesLower.includes("nonmagical weapons")
+                || specialDamagesLower.includes("nonmagical attacks")
+                || specialDamagesLower.includes("mundane attacks")) {
+                sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, "mgc")
             }
-        }
 
-        if (knownTypes.length) {
-            sUtils.assignToObject(actorData, `data.traits.${damageID}.value`, knownTypes)
-        }
+            if (specialDamagesLower.includes("adamantine")) {
+                sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, ["ada", "mgc"])
+            }
 
-        if (customType) {
-            sUtils.assignToObject(actorData, `data.traits.${damageID}.value`, sUtils.capitalizeFirstLetter(customType))
-        }
+            if (specialDamagesLower.includes("silvered")) {
+                sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, ["sil", "mgc"])
+            }
 
-        // "mundane attacks" is an MCDM thing.
-        if (descriptionLower.includes("nonmagical weapons")
-            || descriptionLower.includes("nonmagical attacks")
-            || descriptionLower.includes("mundane attacks")) {
-            sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, "mgc")
-        }
+            // If any bypasses have been set, then assume Foundry will take care of setting the special damage text.
+            if (!actorData.data.traits[damageID].bypasses) {
+                sUtils.assignToObject(actorData, `data.traits.${damageID}.custom`, sUtils.capitalizeFirstLetter(specialDamage))
 
-        if (descriptionLower.includes("adamantine")) {
-            sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, ["ada", "mgc"])
-        }
-
-        if (descriptionLower.includes("silvered")) {
-            sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, ["sil", "mgc"])
+            }
         }
     }
 

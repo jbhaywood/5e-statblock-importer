@@ -8,7 +8,6 @@ import {
     RollData,
     LanguageData,
     NameValueData,
-    ActionDescription,
     DamageConditionId,
     BlockID,
     TopBlocks,
@@ -177,11 +176,32 @@ export class sbiParser {
         }
 
         if (type === BlockID.villainActions) {
-            creature[type] = this.getVillainActionDescriptions(lines)
-                .map(ad => new NameValueData(ad.name, ad.description));
+            creature[type] = this.getVillainActions(lines);
+        } else if (type === BlockID.features) {
+            const featureDatas = [];
+
+            for (const actionData of this.getBlockDatas(lines)) {
+                const nameLower = actionData.name.toLowerCase();
+
+                if (nameLower === "spellcasting") {
+                    creature.spellcasting = this.getSpells(actionData.value, sRegex.spellLine);
+                } else if (nameLower === "innate spellcasting") {
+                    creature.innateSpellcasting = this.getSpells(actionData.value, sRegex.spellInnateLine);
+                } else {
+                    featureDatas.push(new NameValueData(actionData.name, actionData.value));
+                }
+            }
+
+            creature[type] = featureDatas;
+        } else if (type === BlockID.utilitySpells) {
+            const spellDatas = this.getBlockDatas(lines);
+
+            // There should only be one block under the Utility Spells title.
+            if (spellDatas.length === 1) {
+                creature.utilitySpells = this.getSpells(spellDatas[0].value, sRegex.spellInnateLine);
+            }
         } else {
-            creature[type] = this.getActionDescriptions(lines)
-                .map(ad => new NameValueData(ad.name, ad.description));
+            creature[type] = this.getBlockDatas(lines);
         }
     }
 
@@ -274,21 +294,80 @@ export class sbiParser {
 
     // Example: Damage Vulnerabilities bludgeoning, fire
     static setDamagesAndConditions(lines, type, creature) {
-        const line = sUtils.combineToString(lines);
+        let line = sUtils.combineToString(lines);
 
+        // Remove the type name.
         switch (type) {
             case DamageConditionId.immunities:
-                creature.damageImmunities = line.replace(/damage immunities/i, "").trim();
+                line = line.replace(/damage immunities/i, "").trim();
                 break;
             case DamageConditionId.resistances:
-                creature.damageResistances = line.replace(/damage resistances/i, "").trim();
+                line = line.replace(/damage resistances/i, "").trim();
                 break;
             case DamageConditionId.vulnerabilities:
-                creature.damageVulnerabilities = line.replace(/damage vulnerabilities/i, "").trim();
+                line = line.replace(/damage vulnerabilities/i, "").trim();
                 break;
             case BlockID.conditionImmunities:
-                creature.conditionImmunities = line.replace(/condition immunities/i, "").trim();
+                line = line.replace(/condition immunities/i, "").trim();
                 break;
+        }
+
+        const regex = type === BlockID.conditionImmunities ? sRegex.conditionTypes : sRegex.damageTypes;
+
+        // Parse out the known damage types.
+        const knownTypes = [...line.matchAll(regex)]
+            .filter(arr => arr[0].length)
+            .map(arr => arr[0].toLowerCase());
+
+        // Now see if there is any custom text we should add.
+        let customType = null;
+
+        // Split on ";" first for lines like "poison; bludgeoning, piercing, and slashing from nonmagical attacks"
+        const strings = line.split(";");
+
+        if (strings.length === 2) {
+            customType = strings[1].trim();
+        } else {
+            // Handle something like "piercing from magic weapons wielded by good creatures"
+            // by taking out the known types, commas, and spaces, and seeing if there's anything left.
+            const descLeftover = line.replace(regex, "").replace(/,/g, "").trim();
+            if (descLeftover) {
+                customType = descLeftover;
+            }
+        }
+
+        if (knownTypes.length) {
+            switch (type) {
+                case DamageConditionId.immunities:
+                    creature.standardDamageImmunities = knownTypes;
+                    break;
+                case DamageConditionId.resistances:
+                    creature.standardDamageResistances = knownTypes;
+                    break;
+                case DamageConditionId.vulnerabilities:
+                    creature.standardDamageVulnerabilities = knownTypes;
+                    break;
+                case BlockID.conditionImmunities:
+                    creature.standardConditionImmunities = knownTypes;
+                    break;
+            }
+        }
+
+        if (customType) {
+            switch (type) {
+                case DamageConditionId.immunities:
+                    creature.specialDamageImmunities = customType;
+                    break;
+                case DamageConditionId.resistances:
+                    creature.specialDamageResistances = customType;
+                    break;
+                case DamageConditionId.vulnerabilities:
+                    creature.specialDamageVulnerabilities = customType;
+                    break;
+                case BlockID.conditionImmunities:
+                    creature.specialConditionImmunities = customType;
+                    break;
+            }
         }
     }
 
@@ -422,10 +501,10 @@ export class sbiParser {
 
     // Combines lines of text into sentences and paragraphs. This is complicated because finding 
     // sentences that can span multiple lines are hard to describe to a computer.
-    static getActionDescriptions(lines) {
+    static getBlockDatas(lines) {
         const result = [];
         const validLines = lines.filter(l => l);
-        let actionDescription = null;
+        let actionData = null;
         let foundTitle = false;
 
         // Pull out the entire spell block because it's formatted differently than all the other action blocks.
@@ -484,57 +563,85 @@ export class sbiParser {
 
                 // Remove the period or exclamation mark from the title.
                 const title = sentence.replace(/[.!]$/, "");
-                actionDescription = new ActionDescription(title);
+                actionData = new NameValueData(title);
 
-                result.push(actionDescription);
+                result.push(actionData);
             } else {
                 foundTitle = false;
 
-                if (actionDescription == null) {
-                    actionDescription = new ActionDescription("Description", sentence);
-                    result.push(actionDescription);
-                } else if (actionDescription.description == null) {
-                    actionDescription.description = sentence;
+                if (actionData == null) {
+                    actionData = new NameValueData("Description", sentence);
+                    result.push(actionData);
+                } else if (actionData.value == null) {
+                    actionData.value = sentence;
                 } else {
-                    actionDescription.description = `${actionDescription.description} ${sentence}`;
+                    actionData.value = `${actionData.value} ${sentence}`;
                 }
             }
         }
 
         for (let index = 0; index < result.length; index++) {
-            const actionDescription = result[index];
-            if (actionDescription.description == null && index != 0) {
+            const aData = result[index];
+            if (aData.value == null && index != 0) {
                 // If there's no description, assume it's a line at the end of the last action description that just looks like a title.
-                result[index - 1].description = result[index - 1].description + " " + actionDescription.name;
+                result[index - 1].value = result[index - 1].value + " " + aData.name;
             } else {
-                actionDescription.description = this.formatForDisplay(actionDescription.description);
+                aData.value = this.formatForDisplay(aData.value);
             }
         }
 
         return result;
     }
 
-    static getVillainActionDescriptions(lines) {
+    static getVillainActions(lines) {
         const result = [];
-        let actionDescription = null;
+        let actionData = null;
 
         for (const line of lines) {
             const titleMatch = sRegex.villainActionTitle.exec(line);
 
             if (titleMatch) {
-                actionDescription = new ActionDescription(titleMatch.groups.title, titleMatch.groups.description);
-                result.push(actionDescription);
+                actionData = new NameValueData(titleMatch.groups.title, titleMatch.groups.description);
+                result.push(actionData);
             } else {
-                if (actionDescription == null) {
-                    actionDescription = new ActionDescription("Description", line);
-                    result.push(actionDescription);
+                if (actionData == null) {
+                    actionData = new NameValueData("Description", line);
+                    result.push(actionData);
                 } else {
-                    actionDescription.description = `${actionDescription.description} ${line}`;
+                    actionData.value = `${actionData.value} ${line}`;
                 }
             }
         }
 
         return result;
+    }
+
+    static getSpells(spellText, spellRegex) {
+        const spellMatches = [...spellText.matchAll(spellRegex)];
+        const spellGroups = [];
+
+        // Put spell groups on their own lines in the description so that it reads better.
+        if (spellMatches.length) {
+            const introDescription = spellText.slice(0, spellMatches[0].index);
+            spellGroups.push(new NameValueData("Description", introDescription));
+
+            for (let idx = 0; idx < spellMatches.length; idx++) {
+                const match = spellMatches[idx];
+                let lastIndex = idx < spellMatches.length - 1 ? spellMatches[idx + 1].index : undefined;
+
+                const spellNames = spellText
+                    .slice(match.index + match[0].length, lastIndex)
+                    .split(/,(?![^\(]*\))/) // split on commas that are outside of parenthesis
+                    .map(spell => spell.trim()) // remove spaces
+                    .map(spell => sUtils.trimStringEnd(spell, ".")) // remove end period
+                    .map(spell => spell.replace(/\s[ABR\+]$/, "")) // remove MCDM activation symbols
+                    .map(spell => sUtils.capitalizeAll(spell)); // capitalize words
+
+                spellGroups.push(new NameValueData(sUtils.trimStringEnd(match[0], ":"), spellNames));
+            }
+        }
+
+        return spellGroups;
     }
 
     // ===============================
