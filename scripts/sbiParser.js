@@ -455,23 +455,7 @@ export class sbiParser {
             .filter(nv => nv.name != null && nv.value != null);
 
         if (line.toLowerCase().includes("hover")) {
-            speeds.push(new NameValueData("hover", "unset"));
-        }
-
-        creature.speeds = speeds;
-    }
-
-    static setSpellCasting(lines, creature) {
-        const line = sUtils.combineToString(lines);
-        const match = [...line.matchAll(sRegex.speedDetails)];
-        if (!match) return;
-
-        const speeds = match
-            .map(m => new NameValueData(m.groups.name, m.groups.value))
-            .filter(nv => nv.name != null && nv.value != null);
-
-        if (line.toLowerCase().includes("hover")) {
-            speeds.push(new NameValueData("hover", "unset"));
+            speeds.push(new NameValueData("hover", ""));
         }
 
         creature.speeds = speeds;
@@ -486,17 +470,6 @@ export class sbiParser {
         creature.alignment = match.groups.alignment?.trim();
         creature.race = match.groups.race?.trim();
         creature.type = match.groups.type?.trim();
-    }
-
-    // TODO: Hook this up. It isn't used right now.
-    static async setInitiativeAsync(lines, actor) {
-        const line = lines.find(l => l.toLowerCase().startsWith("roll initiative") ||
-            l.toLowerCase().startsWith("initiative"));
-
-        if (line != null) {
-            const number = parseInt(sUtils.last(line.split(' ')));
-            await actor.update(sUtils.assignToObject({}, "data.attributes.init.bonus", number));
-        }
     }
 
     // Combines lines of text into sentences and paragraphs. This is complicated because finding 

@@ -12,7 +12,7 @@ export class sbiRegex {
     static conditionImmunities = /^condition immunities\s/i;
     static damageImmunities = /^damage immunities\s/i;
     static damageResistances = /^damage resistances\s/i;
-    static damageVulberabilities = /^damage vulnerabilities\s/i;
+    static damageVulnerabilities = /^damage vulnerabilities\s/i;
     static health = /^(hit points|\bhp\b)\s\d+/i;
     static lairActions = /^lair actions$/i;
     static languages = /^languages\s/i;
@@ -88,7 +88,7 @@ export class sbiRegex {
         { r: this.conditionImmunities, id: BlockID.conditionImmunities },
         { r: this.damageImmunities, id: BlockID.damageImmunities },
         { r: this.damageResistances, id: BlockID.damageResistances },
-        { r: this.damageVulberabilities, id: BlockID.damageVulnerabilities },
+        { r: this.damageVulnerabilities, id: BlockID.damageVulnerabilities },
         { r: this.health, id: BlockID.health },
         { r: this.lairActions, id: BlockID.lairActions },
         { r: this.languages, id: BlockID.languages },

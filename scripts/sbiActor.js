@@ -392,7 +392,6 @@ export class sbiActor {
 
         itemObject.name = sUtils.capitalizeAll(name);
         itemObject.type = "feat";
-        itemObject.img = await sUtils.getImgFromPackItemAsync(lowerName);
         
         await this.setItemAsync(itemObject, actor);
     }
@@ -491,7 +490,7 @@ export class sbiActor {
         const description = spellDatas[0].value;
         const spells = spellDatas.slice(1);
 
-        let spellObjects = [];
+        let spellObjs = [];
 
         // Set spell level
         const spellLevelMatch = sRegex.spellLevel.exec(description);
@@ -531,7 +530,7 @@ export class sbiActor {
                     // Remove text in parenthesis when storing the spell name for lookup later.
                     let cleanName = spellName.replace(/\(.*\)/, "").trim()
 
-                    spellObjects.push({
+                    spellObjs.push({
                         "name": cleanName,
                         "type": spellType,
                         "count": spellCount
@@ -551,7 +550,7 @@ export class sbiActor {
                 if (spell) {
                     const perday = this.getGroupValue("perday", [...itemData.name.matchAll(sRegex.spellcastingDetails)]);
 
-                    spellObjects.push({
+                    spellObjs.push({
                         "name": spell.name,
                         "type": "innate",
                         "count": parseInt(perday)
@@ -572,30 +571,30 @@ export class sbiActor {
         }
 
         // Add spells to actor.
-        for (const spellData of spellObjects) {
-            const spell = await sUtils.getItemFromPacksAsync(spellData.name, "spell");
+        for (const spellObj of spellObjs) {
+            const spell = await sUtils.getItemFromPacksAsync(spellObj.name, "spell");
 
             if (spell) {
-                if (spellData.type === "slots") {
+                if (spellObj.type === "slots") {
                     // Update the actor's number of slots per level.
                     let spellObject = {};
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellData.count);
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellData.count);
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellData.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellObj.count);
 
                     await actor.update(spellObject);
-                } else if (spellData.type === "innate") {
-                    if (spellData.count) {
-                        sUtils.assignToObject(spell, "data.uses.value", spellData.count);
-                        sUtils.assignToObject(spell, "data.uses.max", spellData.count);
+                } else if (spellObj.type === "innate") {
+                    if (spellObj.count) {
+                        sUtils.assignToObject(spell, "data.uses.value", spellObj.count);
+                        sUtils.assignToObject(spell, "data.uses.max", spellObj.count);
                         sUtils.assignToObject(spell, "data.uses.per", "day");
                         sUtils.assignToObject(spell, "data.preparation.mode", "innate");
                     } else {
                         sUtils.assignToObject(spell, "data.preparation.mode", "atwill");
                     }
-                } else if (spellData.type === "at will") {
+                } else if (spellObj.type === "at will") {
                     sUtils.assignToObject(spell, "data.preparation.mode", "atwill");
-                } else if (spellData.type === "cantrip") {
+                } else if (spellObj.type === "cantrip") {
                     // Don't need to set anything special because it should already be set on the spell we retrieved from the pack.
                 }
 
