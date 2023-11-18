@@ -607,7 +607,7 @@ export class sbiParser {
                     .split(/,(?![^\(]*\))/) // split on commas that are outside of parenthesis
                     .map(spell => spell.trim()) // remove spaces
                     .map(spell => sUtils.trimStringEnd(spell, ".")) // remove end period
-                    .map(spell => spell.replace(/\s[ABR\+]$/, "")) // remove MCDM activation symbols
+                    .map(spell => spell.replace(/\s?[ABR\+]$/, "")) // remove MCDM activation symbols
                     .map(spell => sUtils.capitalizeAll(spell)); // capitalize words
 
                 spellGroups.push(new NameValueData(sUtils.trimStringEnd(match[0], ":"), spellNames));
