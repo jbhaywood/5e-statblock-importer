@@ -10,6 +10,7 @@ export class sbiActor {
             folder: selectedFolderId
         });
 
+        await this.setAbilitiesAsync(actor, creatureData);
         await this.setActionsAsync(actor, creatureData);
         await this.setMajorActionAsync(actor, BlockID.legendaryActions, creatureData);
         await this.setMajorActionAsync(actor, BlockID.lairActions, creatureData);
@@ -17,7 +18,6 @@ export class sbiActor {
         await this.setMinorActionsAsync(actor, BlockID.bonusActions, creatureData);
         await this.setMinorActionsAsync(actor, BlockID.reactions, creatureData);
         await this.setArmorAsync(actor, creatureData);
-        await this.setAbilitiesAsync(actor, creatureData);
         await this.setChallengeAsync(actor, creatureData);
         await this.setDamagesAndConditionsAsync(actor, creatureData);
         await this.setFeaturesAsync(actor, creatureData);
@@ -390,10 +390,19 @@ export class sbiActor {
             await this.setSpellcastingAsync(creatureData.utilitySpells, itemObject, actor, false);
         }
 
-        itemObject.name = sUtils.capitalizeAll(name);
-        itemObject.type = "feat";
-        
-        await this.setItemAsync(itemObject, actor);
+        if (itemObject.data) {
+            itemObject.name = sUtils.capitalizeAll(name);
+            itemObject.type = "feat";
+
+            // Look for spell attacks and set their ability modifier to match the spellcasting ability.
+            for (const item of [...actor.data.items]) {
+                if (item.system.actionType === "msak" || item.system.actionType === "rsak") {
+                    item.update(sUtils.assignToObject({}, "system.ability", actor.data.data.attributes.spellcasting));
+                }
+            }
+
+            await this.setItemAsync(itemObject, actor);
+        }
     }
 
     static async setSoulsAsync(actor, creatureData) {
@@ -509,9 +518,9 @@ export class sbiActor {
 
                 const spellLevel = spell.name.toLowerCase();
                 const spellNames = spell.value;
-
-                const slots = this.getGroupValue("slots", [...spellLevel.matchAll(sRegex.spellcastingDetails)]);
-                const perday = this.getGroupValue("perday", [...spellLevel.matchAll(sRegex.spellcastingDetails)]);
+                const spellMatches =  [...spellLevel.matchAll(sRegex.spellcastingDetails)];
+                const slots = this.getGroupValue("slots", spellMatches);
+                const perday = this.getGroupValue("perday", spellMatches);
 
                 let spellType;
                 let spellCount;
@@ -560,14 +569,15 @@ export class sbiActor {
         }
 
         // Set spellcasting ability.
-        let spellcastingAbility = this.getGroupValue("ability1", [...description.matchAll(sRegex.spellcastingDetails)]);
+        const spellMatches =  [...description.matchAll(sRegex.spellcastingDetails)];
+        let spellcastingAbility = this.getGroupValue("ability1", spellMatches);
 
         if (spellcastingAbility == null) {
-            spellcastingAbility = this.getGroupValue("ability2", [...description.matchAll(sRegex.spellcastingDetails)]);
+            spellcastingAbility = this.getGroupValue("ability2", spellMatches);
         }
 
         if (spellcastingAbility != null) {
-            sUtils.assignToObject(itemData, "data.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility));
+            await actor.update(sUtils.assignToObject({}, "data.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility)));
         }
 
         // Add spells to actor.
@@ -813,8 +823,13 @@ export class sbiActor {
             sUtils.assignToObject(itemData, "data.range.value", nearRange);
             sUtils.assignToObject(itemData, "data.range.long", farRange);
             sUtils.assignToObject(itemData, "data.range.units", "ft");
-            sUtils.assignToObject(itemData, "data.actionType", "rwak");
             sUtils.assignToObject(itemData, "data.ability", "dex");
+
+            if (text.match(/spell attack/i)) {
+                sUtils.assignToObject(itemData, "data.actionType", "rsak");
+            } else {
+                sUtils.assignToObject(itemData, "data.actionType", "rwak");
+            }
         }
     }
 
@@ -837,7 +852,12 @@ export class sbiActor {
 
             sUtils.assignToObject(itemData, "data.range.value", reach);
             sUtils.assignToObject(itemData, "data.range.units", "ft");
-            sUtils.assignToObject(itemData, "data.actionType", "mwak");
+
+            if (text.match(/spell attack/i)) {
+                sUtils.assignToObject(itemData, "data.actionType", "msak");
+            } else {
+                sUtils.assignToObject(itemData, "data.actionType", "mwak");
+            }
         }
     }
 
