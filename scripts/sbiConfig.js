@@ -14,5 +14,5 @@ sbiConfig.options = {
     "debug": false,
     "testBlock": statblock,
     // Turn autoDebug off if you still want to be able to use the window.
-    "autoDebug": true,
+    "autoDebug": false,
 }
