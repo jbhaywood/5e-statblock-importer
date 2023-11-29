@@ -727,9 +727,8 @@ export class sbiActor {
             }
 
             // If any bypasses have been set, then assume Foundry will take care of setting the special damage text.
-            if (actorData.data && !actorData.data.traits[damageID].bypasses) {
+            if (actorData.data && !actorData.data.traits[damageID]?.bypasses) {
                 sUtils.assignToObject(actorData, `data.traits.${damageID}.custom`, sUtils.capitalizeFirstLetter(specialDamage))
-
             }
         }
     }
