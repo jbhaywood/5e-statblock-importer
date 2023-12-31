@@ -80,6 +80,23 @@ export const KnownLanguages = [
     "undercommon"
 ];
 
+export const KnownCreatureTypes = [
+    "aberration",
+    "celestial",
+    "dragon",
+    "fey",
+    "giant",
+    "monstrosity",
+    "plant",
+    "beast",
+    "construct",
+    "elemental",
+    "fiend",
+    "humanoid",
+    "ooze",
+    "undead"
+];
+
 export class CreatureData {
     constructor(name) {
         this.name = name;                           // string
