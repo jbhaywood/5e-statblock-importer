@@ -495,7 +495,12 @@ export class sbiActor {
         sUtils.assignToObject(detailsData, "data.details.alignment", sUtils.capitalizeAll(creatureData.alignment?.trim()));
         sUtils.assignToObject(detailsData, "data.details.race", sUtils.capitalizeAll(creatureData.race?.trim()));
         sUtils.assignToObject(detailsData, "data.details.type.value", creatureData.type?.trim());
+
+        const hasCustomType = creatureData.customType?.trim();
+        if(hasCustomType) {
+        sUtils.assignToObject(detailsData, "data.details.type.value", "custom");
         sUtils.assignToObject(detailsData, "data.details.type.custom", sUtils.capitalizeAll(creatureData.customType?.trim()));
+        }
 
         await actor.update(detailsData);
     }
