@@ -424,19 +424,6 @@ export class sbiParser {
         const line = sUtils.combineToString(lines);
         const matches = [...line.matchAll(sRegex.sensesDetails)];
         creature.senses = matches.map(m => new NameValueData(m.groups.name, m.groups.modifier));
-
-        const senses = line.split(",").reverse();
-        // Since there can be only one "special" sense, go backwards through the 
-        // list until we find a known sense. This assumes senses are listed from
-        // specific to general, and handles special case senses like "soulsight"
-        // from MCDM statblocks.
-        for (const sense of senses) {
-            if (sRegex.sensesDetails.exec(sense)) {
-                break;
-            }
-
-            creature.specialSense = sense.trim();
-        }
     }
 
     static setSkills(lines, creature) {
