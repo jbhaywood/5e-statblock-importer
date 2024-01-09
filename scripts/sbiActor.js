@@ -195,26 +195,11 @@ export class sbiActor {
 
                 foundArmorItems = true;
             } else {
-                const getShortArmor = (armorType) => {
-                    switch (armorType) {
-                        case "studded leather":
-                            return "studded leather armor";
-                        case "padded":
-                            return "padded armor";
-                        case "plate":
-                            return "plate armor";
-                        case "half plate":
-                            return "half plate armor";
-                        case "splint":
-                            return "splint armor";
-                        default:
-                            return armorType;
-                    }
-                };
-
-                const armorItem = getShortArmor(armorType);
-                const item = await sUtils.getItemFromPacksAsync(armorItem, "equipment");
-
+                let item;
+                item = await sUtils.getItemFromPacksAsync(armorType, "equipment");
+                if (!item) {
+                    item = await sUtils.getItemFromPacksAsync(`${armorType} armor`, "equipment");
+                }
                 if (item) {
                     item.data.equipped = true;
                     item.data.proficient = true;
