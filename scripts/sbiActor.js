@@ -468,30 +468,40 @@ export class sbiActor {
     }
 
     static async setRacialDetailsAsync(actor, creatureData) {
+        const getSizeAbbreviation = (size) => {
+            switch (size) {
+                case "small":
+                    return "sm";
+                case "medium":
+                    return "med";
+                case "large":
+                    return "lg";
+                case "gargantuan":
+                    return "grg";
+                default:
+                    return size;
+            }
+        };
+        
         const sizeValue = creatureData.size.toLowerCase();
+        const swarmSizeValue = creatureData.swarmSize?.toLowerCase();
         const detailsData = {};
-
-        switch (sizeValue) {
-            case "small":
-                sUtils.assignToObject(detailsData, "data.traits.size", "sm");
-                break;
-            case "medium":
-                sUtils.assignToObject(detailsData, "data.traits.size", "med");
-                break;
-            case "large":
-                sUtils.assignToObject(detailsData, "data.traits.size", "lg");
-                break;
-            case "gargantuan":
-                sUtils.assignToObject(detailsData, "data.traits.size", "grg");
-                break;
-            default:
-                sUtils.assignToObject(detailsData, "data.traits.size", sizeValue);
-                break;
+        
+        sUtils.assignToObject(detailsData, "data.traits.size", getSizeAbbreviation(sizeValue));
+        
+        if (swarmSizeValue) {
+            sUtils.assignToObject(detailsData, "data.details.type.swarm", getSizeAbbreviation(swarmSizeValue));
         }
 
         sUtils.assignToObject(detailsData, "data.details.alignment", sUtils.capitalizeAll(creatureData.alignment?.trim()));
         sUtils.assignToObject(detailsData, "data.details.type.subtype", sUtils.capitalizeAll(creatureData.race?.trim()));
         sUtils.assignToObject(detailsData, "data.details.type.value", creatureData.type?.trim().toLowerCase());
+      
+        const hasCustomType = creatureData.customType?.trim();
+        if(hasCustomType) {
+        sUtils.assignToObject(detailsData, "data.details.type.value", "custom");
+        sUtils.assignToObject(detailsData, "data.details.type.custom", sUtils.capitalizeAll(creatureData.customType?.trim()));
+        }
 
         await actor.update(detailsData);
     }
