@@ -336,22 +336,26 @@ export class sbiActor {
     }
 
     static async setSensesAsync(actor, creatureData) {
+        if (!creatureData.senses) return;
+
         const actorObject = {};
+        const specialSenses = [];
 
         for (const sense of creatureData.senses) {
-            const name = sense.name.toLowerCase();
-            const modifier = parseInt(sense.value);
-
-            sUtils.assignToObject(actorObject, `data.attributes.senses.${name}`, modifier);
-
-            if (name === "darkvision") {
-                sUtils.assignToObject(actorObject, "token.dimSight", modifier);
+            const senseName = sense.name.toLowerCase();
+            const senseRange = sense.value;
+            if (senseName === "perception") {
+                continue;
+            } else if (senseName === "blindsight" || senseName === "darkvision" || senseName === "tremorsense" || senseName === "truesight") {
+                sUtils.assignToObject(actorObject, `data.attributes.senses.${senseName}`, senseRange);
+                sUtils.assignToObject(actorObject, "token.dimSight", senseRange);
+            } else {
+                const specialSense = sUtils.capitalizeFirstLetter(senseName);
+                specialSenses.push(`${specialSense} ${senseRange} ft`);
             }
         }
 
-        if (creatureData.specialSense) {
-            sUtils.assignToObject(actorObject, "data.attributes.senses.special", sUtils.capitalizeAll(creatureData.specialSense));
-        }
+        actorObject["data.attributes.senses.special"] = specialSenses.join('; ');
 
         await actor.update(actorObject);
     }
