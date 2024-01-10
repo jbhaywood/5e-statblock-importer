@@ -320,7 +320,8 @@ export class sbiActor {
     static async setRoleAsync(actor, creatureData) {
         if (!creatureData.role) return;
 
-        await actor.update(sUtils.assignToObject({}, "data.details.type.subtype", creatureData.role));
+        await actor.update(sUtils.assignToObject({}, "data.details.source.custom", creatureData.role));
+        await actor.update(sUtils.assignToObject({}, "data.details.source.book", "Flee, Mortals!"));
     }
 
     static async setSavingThrowsAsync(actor, creatureData) {
@@ -497,9 +498,9 @@ export class sbiActor {
         }
 
         sUtils.assignToObject(detailsData, "data.details.alignment", sUtils.capitalizeAll(creatureData.alignment?.trim()));
-        sUtils.assignToObject(detailsData, "data.details.race", sUtils.capitalizeAll(creatureData.race?.trim()));
-        sUtils.assignToObject(detailsData, "data.details.type.value", creatureData.type?.trim());
-
+        sUtils.assignToObject(detailsData, "data.details.type.subtype", sUtils.capitalizeAll(creatureData.race?.trim()));
+        sUtils.assignToObject(detailsData, "data.details.type.value", creatureData.type?.trim().toLowerCase());
+      
         const hasCustomType = creatureData.customType?.trim();
         if(hasCustomType) {
         sUtils.assignToObject(detailsData, "data.details.type.value", "custom");
