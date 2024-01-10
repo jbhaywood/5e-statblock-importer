@@ -195,8 +195,11 @@ export class sbiActor {
 
                 foundArmorItems = true;
             } else {
-                const item = await sUtils.getItemFromPacksAsync(armorType, "equipment");
-
+                let item;
+                item = await sUtils.getItemFromPacksAsync(armorType, "equipment");
+                if (!item) {
+                    item = await sUtils.getItemFromPacksAsync(`${armorType} armor`, "equipment");
+                }
                 if (item) {
                     item.data.equipped = true;
                     item.data.proficient = true;
