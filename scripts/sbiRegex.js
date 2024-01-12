@@ -63,7 +63,7 @@ export class sbiRegex {
     static actionCost = /\((costs )?(?<cost>\d+) action(s)?\)/i;
     static attack = /\+(?<tohit>\d+) to hit/i;
     static conditionTypes = /\bblinded\b|\bcharmed\b|\bdeafened\b|\bdiseased\b|\bexhaustion\b|\bfrightened\b|\bgrappled\b|\bincapacitated\b|\binvisible\b|\bparalyzed\b|\bpetrified\b|\bpoisoned\b|\bprone\b|\brestrained\b|\bstunned\b|\bunconscious\b/ig;
-    static damageRoll = /\(?(?<damageroll1>\d+(d\d+)?)(\s?\+\s?(?<damagemod1>\d+))?\)? (?<damagetype1>\w+)( damage)(.+(plus|and|or)\s+(\d+\s+\(*)?((?<damageroll2>\d+(d\d+)?)(\s?\+\s?(?<damagemod2>\d+))?)\)? (?<damagetype2>\w+)( damage))?/i;
+    static damageRoll = /\(?(?<damageroll1>\d+(d\d+)?)(\s?\+\s?(?<damagemod1>\d+))?\)? (?<damagetype1>\w+)( damage)(.+(plus|and)\s+(\d+\s+\(*)?((?<damageroll2>\d+(d\d+)?)(\s?\+\s?(?<damagemod2>\d+))?)\)? (?<damagetype2>\w+)( damage))?/i;
     static damageTypes = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b|\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b/ig;
     static legendaryActionCount = /take (?<count>\d+) legendary/i;
     static nameValue = /(?<name>\w+)\s?(?<value>\d+)/ig;
