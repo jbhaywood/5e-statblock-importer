@@ -71,7 +71,7 @@ export class sbiRegex {
     static spellLine = /(at-will|cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th)[\w\d\s\(\)-]*:/ig;
     static spellInnateLine = /at will:|\d\/day( each)?:/ig;
     static spellInnateSingle = /innately cast (?<spellname>[\w|\s]+)(\s\(.+\))?,/i
-    static range = /range (?<near>\d+)\/(?<far>\d+) ?(f(ee|oo)?t|'|’)/i;
+    static range = /range (?<near>\d+)\/?(?<far>\d+) ?(f(ee|oo)?t|'|’)/i;
     static reach = /reach (?<reach>\d+) ?(f(ee|oo)?t|'|’)/i;
     static recharge = /\(recharge (?<recharge>\d+)([–|-]\d+)?\)/i;
     static versatile = /\((?<damageroll>\d+d\d+( ?\+ ?\d+)?)\) (?<damagetype>\w+) damage if used with two hands/i;
