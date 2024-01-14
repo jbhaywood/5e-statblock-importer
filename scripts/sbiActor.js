@@ -606,16 +606,16 @@ export class sbiActor {
                 if (spellObj.type === "slots") {
                     // Update the actor's number of slots per level.
                     let spellObject = {};
-                    sUtils.assignToObject(spellObject, `spells.spell${spell.level}.value`, spellObj.count);
-                    sUtils.assignToObject(spellObject, `spells.spell${spell.level}.max`, spellObj.count);
-                    sUtils.assignToObject(spellObject, `spells.spell${spell.level}.override`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.value`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.max`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.override`, spellObj.count);
 
                     await actor.update(spellObject);
                 } else if (spellObj.type === "innate") {
                     if (spellObj.count) {
-                        sUtils.assignToObject(spell, "uses.value", spellObj.count);
-                        sUtils.assignToObject(spell, "uses.max", spellObj.count);
-                        sUtils.assignToObject(spell, "uses.per", "day");
+                        sUtils.assignToObject(spell, "system.uses.value", spellObj.count);
+                        sUtils.assignToObject(spell, "system.uses.max", spellObj.count);
+                        sUtils.assignToObject(spell, "system.uses.per", "day");
                         sUtils.assignToObject(spell, "system.preparation.mode", "innate");
                     } else {
                         sUtils.assignToObject(spell, "system.preparation.mode", "atwill");
