@@ -295,7 +295,7 @@ export class sbiActor {
             }
 
             this.setPerDay(name, itemData);
-            if (itemData.data?.uses.value) {
+            if (itemData.data.uses?.value) {
                 sUtils.assignToObject(itemData, "data.activation.type", "special");
             }
 
