@@ -835,7 +835,7 @@ export class sbiActor {
 
         if (match) {
             const nearRange = parseInt(match.groups.near);
-            const farRange = parseInt(match.groups.far);
+            const farRange = match.groups.far ? parseInt(match.groups.far) : null;
 
             sUtils.assignToObject(itemData, "data.range.value", nearRange);
             sUtils.assignToObject(itemData, "data.range.long", farRange);
