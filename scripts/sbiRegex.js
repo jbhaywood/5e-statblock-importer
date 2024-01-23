@@ -26,7 +26,7 @@ export class sbiRegex {
     static racialDetails = /^(?<size>\bfine\b|\bdiminutive\b|\btiny\b|\bsmall\b|\bmedium\b|\blarge\b|\bhuge\b|\bgargantuan\b|\bcolossal\b)(\sswarm of (?<swarmsize>\w+))?\s(?<type>\w+)([,\s]+\((?<race>[,\w\s]+)\))?([,\s]+(?<alignment>[\w\s\-]+))?/ig;
     static reactions = /^reactions$/i;
     static savingThrows = /^(saving throws|saves)\s(\bstr\b|\bdex\b|\bcon\b|\bint\b|\bwis\b|\bcha\b)/i;
-    static senses = /^senses.+\d+\s\bft\b/i;
+    static senses = /^senses( passive)?(.+\d+\s\bft\b)?/i;
     static skills = /^skills.+[\+-]\d+/i;
     static souls = /^souls\s\d+/i;
     static speed = /^speed\s\d+\sft/i;
