@@ -201,9 +201,9 @@ export class sbiActor {
                     item = await sUtils.getItemFromPacksAsync(`${armorType} armor`, "equipment");
                 }
                 if (item) {
-                    item.data.equipped = true;
-                    item.data.proficient = true;
-                    item.data.attunement = 2;
+                    item.system.equipped = true;
+                    item.system.proficient = true;
+                    item.system.attunement = 2;
 
                     await actor.createEmbeddedDocuments("Item", [item]);
 
