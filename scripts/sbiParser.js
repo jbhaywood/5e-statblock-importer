@@ -208,7 +208,9 @@ export class sbiParser {
 
                 if (nameLower === "spellcasting") {
                     creature.innateSpellcasting = this.getSpells(actionData.value, sRegex.spellInnateLine);
-                } 
+                } else {
+                    creature[type] = this.getBlockDatas(lines);
+                }
             }
         }
         else {
