@@ -519,13 +519,6 @@ export class sbiActor {
 
         let spellObjs = [];
 
-        // Set spell level
-        const spellLevelMatch = sRegex.spellLevel.exec(description);
-
-        if (spellLevelMatch) {
-            sUtils.assignToObject(itemData, "data.details.spellLevel", parseInt(spellLevelMatch.groups.level));
-        }
-
         if (spells.length) {
             const descriptionLines = [];
             descriptionLines.push(`<p>${description}</p>`);
@@ -584,6 +577,13 @@ export class sbiActor {
                     });
                 }
             }
+        }
+
+        // Set spellcaster level
+        const spellcasterLevelMatch = sRegex.spellcasterLevel.exec(description);
+
+        if (spellcasterLevelMatch) {
+            await actor.update(sUtils.assignToObject({}, "data.details.spellLevel", parseInt(spellcasterLevelMatch.groups.level)));
         }
 
         // Set spellcasting ability.
