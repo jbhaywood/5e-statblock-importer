@@ -201,7 +201,17 @@ export class sbiParser {
             if (spellDatas.length === 1) {
                 creature.utilitySpells = this.getSpells(spellDatas[0].value, sRegex.spellInnateLine);
             }
-        } else {
+        } else if (type === BlockID.actions) {
+
+            for (const actionData of this.getBlockDatas(lines)) {
+                const nameLower = actionData.name.toLowerCase();
+
+                if (nameLower === "spellcasting") {
+                    creature.innateSpellcasting = this.getSpells(actionData.value, sRegex.spellInnateLine);
+                } 
+            }
+        }
+        else {
             creature[type] = this.getBlockDatas(lines);
         }
     }
