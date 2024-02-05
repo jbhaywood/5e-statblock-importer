@@ -177,6 +177,7 @@ export class sbiActor {
             sUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", activationType);
             sUtils.assignToObject(itemData, "data.activation.type", activationType);
 
+            this.setPerDay(name, itemData);
             await this.setItemAsync(itemData, actor);
         }
     }
@@ -291,6 +292,11 @@ export class sbiActor {
                 sUtils.assignToObject(itemData, "data.consume.type", "attribute");
                 sUtils.assignToObject(itemData, "data.consume.target", "resources.legres.value");
                 sUtils.assignToObject(itemData, "data.consume.amount", 1);
+            }
+
+            this.setPerDay(name, itemData);
+            if (itemData.data.uses?.value) {
+                sUtils.assignToObject(itemData, "data.activation.type", "special");
             }
 
             await this.setItemAsync(itemData, actor);
@@ -825,7 +831,7 @@ export class sbiActor {
             const uses = match.groups.perday;
             sUtils.assignToObject(itemData, "data.uses.value", parseInt(uses));
             sUtils.assignToObject(itemData, "data.uses.max", uses);
-            sUtils.assignToObject(itemData, "data.range.per", "day");
+            sUtils.assignToObject(itemData, "data.uses.per", "day");
         }
     }
 
@@ -835,7 +841,7 @@ export class sbiActor {
 
         if (match) {
             const nearRange = parseInt(match.groups.near);
-            const farRange = parseInt(match.groups.far);
+            const farRange = match.groups.far ? parseInt(match.groups.far) : null;
 
             sUtils.assignToObject(itemData, "data.range.value", nearRange);
             sUtils.assignToObject(itemData, "data.range.long", farRange);
