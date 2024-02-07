@@ -67,7 +67,7 @@ export class sbiRegex {
     static damageTypes = /\bbludgeoning\b|\bpiercing\b|\bslashing\b|\bacid\b|\bcold\b|\bfire\b|\blightning\b|\bnecrotic\b|\bpoison\b|\bpsychic\b|\bradiant\b|\bthunder\b/ig;
     static legendaryActionCount = /take (?<count>\d+) legendary/i;
     static nameValue = /(?<name>\w+)\s?(?<value>\d+)/ig;
-    static spellLevel = /(?<level>\d+)(.+)level spellcaster/i;
+    static spellcasterLevel = /(?<level>\d+)(.+)level spellcaster/i;
     static spellLine = /(at-will|cantrips|1st|2nd|3rd|4th|5th|6th|7th|8th|9th)[\w\d\s\(\)-]*:/ig;
     static spellInnateLine = /at will:|\d\/day( each)?:/ig;
     static spellInnateSingle = /innately cast (?<spellname>[\w|\s]+)(\s\(.+\))?,/i
