@@ -202,9 +202,9 @@ export class sbiActor {
                     item = await sUtils.getItemFromPacksAsync(`${armorType} armor`, "equipment");
                 }
                 if (item) {
-                    item.data.equipped = true;
-                    item.data.proficient = true;
-                    item.data.attunement = 2;
+                    item.system.equipped = true;
+                    item.system.proficient = true;
+                    item.system.attunement = 2;
 
                     await actor.createEmbeddedDocuments("Item", [item]);
 
@@ -376,9 +376,9 @@ export class sbiActor {
         for (const skill of creatureData.skills) {
             const skillId = this.convertToShortSkill(skill.name);
             const skillMod = parseInt(skill.value);
-            const actorSkill = actor.data.data.skills[skillId];
-            const abilityMod = actor.data.data.abilities[actorSkill.ability].mod;
-            const generalProf = actor.data.data.attributes.prof;
+            const actorSkill = actor.system.skills[skillId];
+            const abilityMod = actor.system.abilities[actorSkill.ability].mod;
+            const generalProf = actor.system.attributes.prof;
             const skillProf = (skillMod - abilityMod) / generalProf;
 
             await actor.update(sUtils.assignToObject({}, `data.skills.${skillId}.value`, skillProf));
@@ -409,9 +409,9 @@ export class sbiActor {
             itemObject.type = "feat";
 
             // Look for spell attacks and set their ability modifier to match the spellcasting ability.
-            for (const item of [...actor.data.items]) {
+            for (const item of [...actor.items]) {
                 if (item.system.actionType === "msak" || item.system.actionType === "rsak") {
-                    item.update(sUtils.assignToObject({}, "system.ability", actor.data.data.attributes.spellcasting));
+                    item.update(sUtils.assignToObject({}, "system.ability", actor.system.attributes.spellcasting));
                 }
             }
 
@@ -612,22 +612,22 @@ export class sbiActor {
                 if (spellObj.type === "slots") {
                     // Update the actor's number of slots per level.
                     let spellObject = {};
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.value`, spellObj.count);
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.max`, spellObj.count);
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.data.level}.override`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.value`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.max`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.override`, spellObj.count);
 
                     await actor.update(spellObject);
                 } else if (spellObj.type === "innate") {
                     if (spellObj.count) {
-                        sUtils.assignToObject(spell, "data.uses.value", spellObj.count);
-                        sUtils.assignToObject(spell, "data.uses.max", spellObj.count);
-                        sUtils.assignToObject(spell, "data.uses.per", "day");
-                        sUtils.assignToObject(spell, "data.preparation.mode", "innate");
+                        sUtils.assignToObject(spell, "system.uses.value", spellObj.count);
+                        sUtils.assignToObject(spell, "system.uses.max", spellObj.count);
+                        sUtils.assignToObject(spell, "system.uses.per", "day");
+                        sUtils.assignToObject(spell, "system.preparation.mode", "innate");
                     } else {
-                        sUtils.assignToObject(spell, "data.preparation.mode", "atwill");
+                        sUtils.assignToObject(spell, "system.preparation.mode", "atwill");
                     }
                 } else if (spellObj.type === "at will") {
-                    sUtils.assignToObject(spell, "data.preparation.mode", "atwill");
+                    sUtils.assignToObject(spell, "system.preparation.mode", "atwill");
                 } else if (spellObj.type === "cantrip") {
                     // Don't need to set anything special because it should already be set on the spell we retrieved from the pack.
                 }
@@ -798,7 +798,7 @@ export class sbiActor {
             if (attackMatch) {
                 itemData.type = "weapon";
                 sUtils.assignToObject(itemData, "data.weaponType", "natural");
-                sUtils.assignToObject(itemData, "data.ability", actor.data.data.abilities.str.mod > actor.data.data.abilities.dex.mod ? "str" : "dex");
+                sUtils.assignToObject(itemData, "data.ability", actor.system.abilities.str.mod > actor.system.abilities.dex.mod ? "str" : "dex");
 
                 this.setDamageRolls(attackDescription, itemData, actor)
             }
@@ -937,17 +937,17 @@ export class sbiActor {
                 if (match.groups.damagemod1) {
                     const damageMod = parseInt(match.groups.damagemod1);
 
-                    if (damageMod === actor.data.data.abilities.str.mod) {
+                    if (damageMod === actor.system.abilities.str.mod) {
                         sUtils.assignToObject(itemData, "data.ability", "str");
-                    } else if (damageMod === actor.data.data.abilities.dex.mod) {
+                    } else if (damageMod === actor.system.abilities.dex.mod) {
                         sUtils.assignToObject(itemData, "data.ability", "dex");
-                    } else if (damageMod === actor.data.data.abilities.con.mod) {
+                    } else if (damageMod === actor.system.abilities.con.mod) {
                         sUtils.assignToObject(itemData, "data.ability", "con");
-                    } else if (damageMod === actor.data.data.abilities.int.mod) {
+                    } else if (damageMod === actor.system.abilities.int.mod) {
                         sUtils.assignToObject(itemData, "data.ability", "int");
-                    } else if (damageMod === actor.data.data.abilities.wis.mod) {
+                    } else if (damageMod === actor.system.abilities.wis.mod) {
                         sUtils.assignToObject(itemData, "data.ability", "wis");
-                    } else if (damageMod === actor.data.data.abilities.cha.mod) {
+                    } else if (damageMod === actor.system.abilities.cha.mod) {
                         sUtils.assignToObject(itemData, "data.ability", "cha");
                     }
                 }
