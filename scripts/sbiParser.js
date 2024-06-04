@@ -161,7 +161,6 @@ export class sbiParser {
                 }
             }
 
-            console.log(creature);
             const actor = await sActor.convertCreatureToActorAsync(creature, selectedFolderId);
 
             // Open the sheet.

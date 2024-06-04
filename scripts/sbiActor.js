@@ -46,18 +46,18 @@ export class sbiActor {
             itemData.type = "feat";
             itemData.img = await sUtils.getImgFromPackItemAsync(lowerName);
 
-            sUtils.assignToObject(itemData, "data.description.value", description);
-            sUtils.assignToObject(itemData, "data.activation.type", "action");
-            sUtils.assignToObject(itemData, "data.activation.cost", 1);
+            sUtils.assignToObject(itemData, "system.description.value", description);
+            sUtils.assignToObject(itemData, "system.activation.type", "action");
+            sUtils.assignToObject(itemData, "system.activation.cost", 1);
 
             // The "Multiattack" action isn't a real action, so there's nothing more to add to it.
             if (lowerName !== "multiattack") {
                 // We'll assume that an NPC with stuff will have that stuff identified, equipped, attuned, etc.
-                sUtils.assignToObject(itemData, "data.identified", true);
-                sUtils.assignToObject(itemData, "data.equipped", true);
-                sUtils.assignToObject(itemData, "data.attunement", 2);
-                sUtils.assignToObject(itemData, "data.proficient", true);
-                sUtils.assignToObject(itemData, "data.quantity", 1);
+                sUtils.assignToObject(itemData, "system.identified", true);
+                sUtils.assignToObject(itemData, "system.equipped", true);
+                sUtils.assignToObject(itemData, "system.attunement", 2);
+                sUtils.assignToObject(itemData, "system.proficient", true);
+                sUtils.assignToObject(itemData, "system.quantity", 1);
 
                 this.setAttackOrSave(description, itemData, actor);
                 this.setPerDay(name, itemData);
@@ -91,13 +91,13 @@ export class sbiActor {
             itemData.name = actionName;
             itemData.type = "feat";
 
-            sUtils.assignToObject(itemData, "data.description.value", description);
+            sUtils.assignToObject(itemData, "system.description.value", description);
 
             if (actionName === "Description") {
                 itemData.name = sUtils.camelToTitleCase(type);
                 // Add these just so that it doesn't say the action is not equipped and not proficient in the UI.
-                sUtils.assignToObject(itemData, "data.equipped", true);
-                sUtils.assignToObject(itemData, "data.proficient", true);
+                sUtils.assignToObject(itemData, "system.equipped", true);
+                sUtils.assignToObject(itemData, "system.proficient", true);
 
                 // Determine whether this is a legendary or lair action.
                 if (type === BlockID.lairActions) {
@@ -105,15 +105,15 @@ export class sbiActor {
 
                     // Lair actions don't use titles, so it's just one item with all actions included in the description 
                     // text. Because of that, we need to assign the type here instead of in the 'else' block below.
-                    sUtils.assignToObject(itemData, "data.activation.type", "lair");
+                    sUtils.assignToObject(itemData, "system.activation.type", "lair");
 
                     // What iniative count does the lair action activate?
                     const lairInitiativeRegex = /initiative count (?<count>\d+)/i;
                     const lairInitiativeMatch = lairInitiativeRegex.exec(description);
 
                     if (lairInitiativeMatch) {
-                        await actor.update(sUtils.assignToObject({}, "data.resources.lair.value", true));
-                        await actor.update(sUtils.assignToObject({}, "data.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
+                        await actor.update(sUtils.assignToObject({}, "system.resources.lair.value", true));
+                        await actor.update(sUtils.assignToObject({}, "system.resources.lair.initiative", parseInt(lairInitiativeMatch.groups.count)));
                     }
                 } else if (isLegendaryTypeAction) {
                     sUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", "legendary");
@@ -122,14 +122,14 @@ export class sbiActor {
                     const legendaryActionMatch = sRegex.legendaryActionCount.exec(description);
                     const actionCount = legendaryActionMatch ? parseInt(legendaryActionMatch.groups.count) : 3;
 
-                    await actor.update(sUtils.assignToObject({}, "data.resources.legact.value", actionCount));
-                    await actor.update(sUtils.assignToObject({}, "data.resources.legact.max", actionCount));
+                    await actor.update(sUtils.assignToObject({}, "system.resources.legact.value", actionCount));
+                    await actor.update(sUtils.assignToObject({}, "system.resources.legact.max", actionCount));
                 }
 
                 await this.setItemAsync(itemData, actor);
             } else {
                 itemData.name = actionName;
-                sUtils.assignToObject(itemData, "data.activation.type", activationType);
+                sUtils.assignToObject(itemData, "system.activation.type", activationType);
 
                 // How many actions does this cost?
                 const actionCostMatch = sRegex.actionCost.exec(actionName);
@@ -140,10 +140,10 @@ export class sbiActor {
                     itemData.name = itemData.name.slice(0, actionCostMatch.index).trim();
                 }
 
-                sUtils.assignToObject(itemData, "data.consume.type", "attribute");
-                sUtils.assignToObject(itemData, "data.consume.target", "resources.legact.value");
-                sUtils.assignToObject(itemData, "data.consume.amount", actionCost);
-                sUtils.assignToObject(itemData, "data.activation.cost", actionCost);
+                sUtils.assignToObject(itemData, "system.consume.type", "attribute");
+                sUtils.assignToObject(itemData, "system.consume.target", "resources.legact.value");
+                sUtils.assignToObject(itemData, "system.consume.amount", actionCost);
+                sUtils.assignToObject(itemData, "system.activation.cost", actionCost);
 
                 await this.setItemAsync(itemData, actor);
             }
@@ -163,8 +163,8 @@ export class sbiActor {
             itemData.type = "feat";
             itemData.img = await sUtils.getImgFromPackItemAsync(name);
 
-            sUtils.assignToObject(itemData, "data.description.value", description);
-            sUtils.assignToObject(itemData, "data.activation.cost", 1);
+            sUtils.assignToObject(itemData, "system.description.value", description);
+            sUtils.assignToObject(itemData, "system.activation.cost", 1);
 
             let activationType = null;
 
@@ -175,7 +175,7 @@ export class sbiActor {
             }
 
             sUtils.assignToObject(itemData, "flags.adnd5e.itemInfo.type", activationType);
-            sUtils.assignToObject(itemData, "data.activation.type", activationType);
+            sUtils.assignToObject(itemData, "system.activation.type", activationType);
 
             this.setPerDay(name, itemData);
             await this.setItemAsync(itemData, actor);
@@ -191,8 +191,8 @@ export class sbiActor {
 
         for (const armorType of creatureData.armor.types) {
             if (armorType.toLowerCase() === "natural armor") {
-                sUtils.assignToObject(actorObj, "data.attributes.ac.calc", "natural");
-                sUtils.assignToObject(actorObj, "data.attributes.ac.flat", armorValue);
+                sUtils.assignToObject(actorObj, "system.attributes.ac.calc", "natural");
+                sUtils.assignToObject(actorObj, "system.attributes.ac.flat", armorValue);
 
                 foundArmorItems = true;
             } else {
@@ -214,8 +214,8 @@ export class sbiActor {
         }
 
         if (!foundArmorItems) {
-            sUtils.assignToObject(actorObj, "data.attributes.ac.calc", "flat");
-            sUtils.assignToObject(actorObj, "data.attributes.ac.flat", armorValue);
+            sUtils.assignToObject(actorObj, "system.attributes.ac.calc", "flat");
+            sUtils.assignToObject(actorObj, "system.attributes.ac.flat", armorValue);
         }
 
         await actor.update(actorObj);
@@ -225,7 +225,7 @@ export class sbiActor {
         const actorObj = {};
 
         for (const data of creatureData.abilities) {
-            const propPath = `data.abilities.${data.name.toLowerCase()}.value`;
+            const propPath = `system.abilities.${data.name.toLowerCase()}.value`;
             sUtils.assignToObject(actorObj, propPath, parseInt(data.value));
         }
 
@@ -236,10 +236,10 @@ export class sbiActor {
         if (!creatureData.challenge) return;
 
         const actorObject = {};
-        sUtils.assignToObject(actorObject, "data.details.cr", creatureData.challenge.cr);
+        sUtils.assignToObject(actorObject, "system.details.cr", creatureData.challenge.cr);
 
         if (creatureData.challenge.xp) {
-            sUtils.assignToObject(actorObject, "data.details.xp.value", creatureData.challenge.xp);
+            sUtils.assignToObject(actorObject, "system.details.xp.value", creatureData.challenge.xp);
         }
 
         await actor.update(actorObject);
@@ -249,11 +249,11 @@ export class sbiActor {
         const actorObject = {};
 
         if (creatureData.standardConditionImmunities.length) {
-            await actor.update(sUtils.assignToObject({}, "data.traits.ci.value", creatureData.standardConditionImmunities));
+            await actor.update(sUtils.assignToObject({}, "system.traits.ci.value", creatureData.standardConditionImmunities));
         }
 
         if (creatureData.specialConditionImmunities) {
-            sUtils.assignToObject(actorObject, "data.traits.ci.custom", sUtils.capitalizeFirstLetter(creatureData.specialConditionImmunities))
+            sUtils.assignToObject(actorObject, "system.traits.ci.custom", sUtils.capitalizeFirstLetter(creatureData.specialConditionImmunities))
         }
 
         await this.setDamageDataAsync(creatureData.standardDamageImmunities, creatureData.specialDamageImmunities, "di", actorObject);
@@ -274,7 +274,7 @@ export class sbiActor {
             itemData.type = "feat";
             itemData.img = await sUtils.getImgFromPackItemAsync(nameLower);
 
-            sUtils.assignToObject(itemData, "data.description.value", description);
+            sUtils.assignToObject(itemData, "system.description.value", description);
 
             if (nameLower.startsWith("legendary resistance")) {
                 // Example:
@@ -284,19 +284,19 @@ export class sbiActor {
 
                 if (resistanceMatch) {
                     itemData.name = itemData.name.slice(0, resistanceMatch.index).trim();
-                    await actor.update(sUtils.assignToObject({}, "data.resources.legres.value", parseInt(resistanceMatch.groups.perday)));
-                    await actor.update(sUtils.assignToObject({}, "data.resources.legres.max", parseInt(resistanceMatch.groups.perday)));
+                    await actor.update(sUtils.assignToObject({}, "system.resources.legres.value", parseInt(resistanceMatch.groups.perday)));
+                    await actor.update(sUtils.assignToObject({}, "system.resources.legres.max", parseInt(resistanceMatch.groups.perday)));
                 }
 
-                sUtils.assignToObject(itemData, "data.activation.type", "special");
-                sUtils.assignToObject(itemData, "data.consume.type", "attribute");
-                sUtils.assignToObject(itemData, "data.consume.target", "resources.legres.value");
-                sUtils.assignToObject(itemData, "data.consume.amount", 1);
+                sUtils.assignToObject(itemData, "system.activation.type", "special");
+                sUtils.assignToObject(itemData, "system.consume.type", "attribute");
+                sUtils.assignToObject(itemData, "system.consume.target", "resources.legres.value");
+                sUtils.assignToObject(itemData, "system.consume.amount", 1);
             }
 
             this.setPerDay(name, itemData);
-            if (itemData.data.uses?.value) {
-                sUtils.assignToObject(itemData, "data.activation.type", "special");
+            if (itemData.system.uses?.value) {
+                sUtils.assignToObject(itemData, "system.activation.type", "special");
             }
 
             await this.setItemAsync(itemData, actor);
@@ -306,9 +306,9 @@ export class sbiActor {
     static async setHealthAsync(actor, creatureData) {
         const actorObject = {};
 
-        sUtils.assignToObject(actorObject, "data.attributes.hp.value", creatureData.health?.value || 0);
-        sUtils.assignToObject(actorObject, "data.attributes.hp.max", creatureData.health?.value || 0);
-        sUtils.assignToObject(actorObject, "data.attributes.hp.formula", creatureData.health?.formula || 0);
+        sUtils.assignToObject(actorObject, "system.attributes.hp.value", creatureData.health?.value || 0);
+        sUtils.assignToObject(actorObject, "system.attributes.hp.max", creatureData.health?.value || 0);
+        sUtils.assignToObject(actorObject, "system.attributes.hp.formula", creatureData.health?.formula || 0);
 
         await actor.update(actorObject);
     }
@@ -320,8 +320,8 @@ export class sbiActor {
         const unknownValues = creatureData.language.unknownLanguages.map(str => this.convertLanguage(str));
 
         const actorObject = {};
-        sUtils.assignToObject(actorObject, "data.traits.languages.value", knownValues);
-        sUtils.assignToObject(actorObject, "data.traits.languages.custom", sUtils.capitalizeFirstLetter(unknownValues.join(";")));
+        sUtils.assignToObject(actorObject, "system.traits.languages.value", knownValues);
+        sUtils.assignToObject(actorObject, "system.traits.languages.custom", sUtils.capitalizeFirstLetter(unknownValues.join(";")));
 
         await actor.update(actorObject);
     }
@@ -329,8 +329,8 @@ export class sbiActor {
     static async setRoleAsync(actor, creatureData) {
         if (!creatureData.role) return;
 
-        await actor.update(sUtils.assignToObject({}, "data.details.source.custom", creatureData.role));
-        await actor.update(sUtils.assignToObject({}, "data.details.source.book", "Flee, Mortals!"));
+        await actor.update(sUtils.assignToObject({}, "system.details.source.custom", creatureData.role));
+        await actor.update(sUtils.assignToObject({}, "system.details.source.book", "Flee, Mortals!"));
     }
 
     static async setSavingThrowsAsync(actor, creatureData) {
@@ -338,7 +338,7 @@ export class sbiActor {
 
         for (const savingThrow of creatureData.savingThrows) {
             const name = savingThrow.toLowerCase();
-            const propPath = `data.abilities.${name}.proficient`;
+            const propPath = `system.abilities.${name}.proficient`;
             sUtils.assignToObject(actorObject, propPath, 1);
         }
 
@@ -357,7 +357,7 @@ export class sbiActor {
             if (senseName === "perception") {
                 continue;
             } else if (senseName === "blindsight" || senseName === "darkvision" || senseName === "tremorsense" || senseName === "truesight") {
-                sUtils.assignToObject(actorObject, `data.attributes.senses.${senseName}`, senseRange);
+                sUtils.assignToObject(actorObject, `system.attributes.senses.${senseName}`, senseRange);
                 sUtils.assignToObject(actorObject, "token.dimSight", senseRange);
             } else {
                 const specialSense = sUtils.capitalizeFirstLetter(senseName);
@@ -365,7 +365,7 @@ export class sbiActor {
             }
         }
 
-        actorObject["data.attributes.senses.special"] = specialSenses.join('; ');
+        actorObject["system.attributes.senses.special"] = specialSenses.join('; ');
 
         await actor.update(actorObject);
     }
@@ -381,7 +381,7 @@ export class sbiActor {
             const generalProf = actor.system.attributes.prof;
             const skillProf = (skillMod - abilityMod) / generalProf;
 
-            await actor.update(sUtils.assignToObject({}, `data.skills.${skillId}.value`, skillProf));
+            await actor.update(sUtils.assignToObject({}, `system.skills.${skillId}.value`, skillProf));
         }
     }
 
@@ -432,7 +432,7 @@ export class sbiActor {
         itemData.name = `Souls: ${creatureData.souls.value} (${creatureData.souls.formula})`;
         itemData.type = "feat";
 
-        sUtils.assignToObject(itemData, "data.description.value", description);
+        sUtils.assignToObject(itemData, "system.description.value", description);
         await this.setItemAsync(itemData, actor);
     }
 
@@ -500,20 +500,20 @@ export class sbiActor {
         const swarmSizeValue = creatureData.swarmSize?.toLowerCase();
         const detailsData = {};
         
-        sUtils.assignToObject(detailsData, "data.traits.size", getSizeAbbreviation(sizeValue));
+        sUtils.assignToObject(detailsData, "system.traits.size", getSizeAbbreviation(sizeValue));
         
         if (swarmSizeValue) {
-            sUtils.assignToObject(detailsData, "data.details.type.swarm", getSizeAbbreviation(swarmSizeValue));
+            sUtils.assignToObject(detailsData, "system.details.type.swarm", getSizeAbbreviation(swarmSizeValue));
         }
 
-        sUtils.assignToObject(detailsData, "data.details.alignment", sUtils.capitalizeAll(creatureData.alignment?.trim()));
-        sUtils.assignToObject(detailsData, "data.details.type.subtype", sUtils.capitalizeAll(creatureData.race?.trim()));
-        sUtils.assignToObject(detailsData, "data.details.type.value", creatureData.type?.trim().toLowerCase());
+        sUtils.assignToObject(detailsData, "system.details.alignment", sUtils.capitalizeAll(creatureData.alignment?.trim()));
+        sUtils.assignToObject(detailsData, "system.details.type.subtype", sUtils.capitalizeAll(creatureData.race?.trim()));
+        sUtils.assignToObject(detailsData, "system.details.type.value", creatureData.type?.trim().toLowerCase());
       
         const hasCustomType = creatureData.customType?.trim();
         if(hasCustomType) {
-        sUtils.assignToObject(detailsData, "data.details.type.value", "custom");
-        sUtils.assignToObject(detailsData, "data.details.type.custom", sUtils.capitalizeAll(creatureData.customType?.trim()));
+        sUtils.assignToObject(detailsData, "system.details.type.value", "custom");
+        sUtils.assignToObject(detailsData, "system.details.type.custom", sUtils.capitalizeAll(creatureData.customType?.trim()));
         }
 
         await actor.update(detailsData);
@@ -564,7 +564,7 @@ export class sbiActor {
                 }
             }
 
-            sUtils.assignToObject(itemData, "data.description.value", descriptionLines.join(""));
+            sUtils.assignToObject(itemData, "system.description.value", descriptionLines.join(""));
         } else {
             // Some spell casting description bury the spell in the description, like Mehpits.
             // Example: The mephit can innately cast fog cloud, requiring no material components.
@@ -589,7 +589,7 @@ export class sbiActor {
         const spellcasterLevelMatch = sRegex.spellcasterLevel.exec(description);
 
         if (spellcasterLevelMatch) {
-            await actor.update(sUtils.assignToObject({}, "data.details.spellLevel", parseInt(spellcasterLevelMatch.groups.level)));
+            await actor.update(sUtils.assignToObject({}, "system.details.spellLevel", parseInt(spellcasterLevelMatch.groups.level)));
         }
 
         // Set spellcasting ability.
@@ -601,7 +601,7 @@ export class sbiActor {
         }
 
         if (spellcastingAbility != null) {
-            await actor.update(sUtils.assignToObject({}, "data.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility)));
+            await actor.update(sUtils.assignToObject({}, "system.attributes.spellcasting", this.convertToShortAbility(spellcastingAbility)));
         }
 
         // Add spells to actor.
@@ -612,9 +612,9 @@ export class sbiActor {
                 if (spellObj.type === "slots") {
                     // Update the actor's number of slots per level.
                     let spellObject = {};
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.value`, spellObj.count);
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.max`, spellObj.count);
-                    sUtils.assignToObject(spellObject, `data.spells.spell${spell.system.level}.override`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `system.spells.spell${spell.system.level}.value`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `system.spells.spell${spell.system.level}.max`, spellObj.count);
+                    sUtils.assignToObject(spellObject, `system.spells.spell${spell.system.level}.override`, spellObj.count);
 
                     await actor.update(spellObject);
                 } else if (spellObj.type === "innate") {
@@ -729,7 +729,7 @@ export class sbiActor {
 
     static async setDamageDataAsync(standardDamages, specialDamage, damageID, actorData) {
         if (standardDamages.length) {
-            sUtils.assignToObject(actorData, `data.traits.${damageID}.value`, standardDamages)
+            sUtils.assignToObject(actorData, `system.traits.${damageID}.value`, standardDamages)
         }
 
         if (specialDamage) {
@@ -739,20 +739,20 @@ export class sbiActor {
             if (specialDamagesLower.includes("nonmagical weapons")
                 || specialDamagesLower.includes("nonmagical attacks")
                 || specialDamagesLower.includes("mundane attacks")) {
-                sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, "mgc")
+                sUtils.assignToObject(actorData, `system.traits.${damageID}.bypasses`, "mgc")
             }
 
             if (specialDamagesLower.includes("adamantine")) {
-                sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, ["ada", "mgc"])
+                sUtils.assignToObject(actorData, `system.traits.${damageID}.bypasses`, ["ada", "mgc"])
             }
 
             if (specialDamagesLower.includes("silvered")) {
-                sUtils.assignToObject(actorData, `data.traits.${damageID}.bypasses`, ["sil", "mgc"])
+                sUtils.assignToObject(actorData, `system.traits.${damageID}.bypasses`, ["sil", "mgc"])
             }
 
             // If any bypasses have been set, then assume Foundry will take care of setting the special damage text.
-            if (actorData.data && !actorData.data.traits[damageID]?.bypasses) {
-                sUtils.assignToObject(actorData, `data.traits.${damageID}.custom`, sUtils.capitalizeFirstLetter(specialDamage))
+            if (actorData.data && !actorData.system.traits[damageID]?.bypasses) {
+                sUtils.assignToObject(actorData, `system.traits.${damageID}.custom`, sUtils.capitalizeFirstLetter(specialDamage))
             }
         }
     }
@@ -763,7 +763,7 @@ export class sbiActor {
         if (!itemData.img) {
             if (itemData.type === "weapon") {
                 itemData.img = "icons/svg/sword.svg";
-            } else if (itemData.data.activation?.cost) {
+            } else if (itemData.system.activation?.cost) {
                 itemData.img = "icons/svg/combat.svg";
             } else if (itemData.type === "feat") {
                 itemData.img = "icons/svg/book.svg";
@@ -797,8 +797,8 @@ export class sbiActor {
             attackMatch = sRegex.attack.exec(attackDescription);
             if (attackMatch) {
                 itemData.type = "weapon";
-                sUtils.assignToObject(itemData, "data.weaponType", "natural");
-                sUtils.assignToObject(itemData, "data.ability", actor.system.abilities.str.mod > actor.system.abilities.dex.mod ? "str" : "dex");
+                sUtils.assignToObject(itemData, "system.weaponType", "natural");
+                sUtils.assignToObject(itemData, "system.ability", actor.system.abilities.str.mod > actor.system.abilities.dex.mod ? "str" : "dex");
 
                 this.setDamageRolls(attackDescription, itemData, actor)
             }
@@ -806,7 +806,7 @@ export class sbiActor {
 
         if (saveDescription) {
             if (!attackMatch) {
-                sUtils.assignToObject(itemData, "data.actionType", "save");
+                sUtils.assignToObject(itemData, "system.actionType", "save");
             }
 
             const savingThrowMatch = sRegex.savingThrowDetails.exec(description);
@@ -814,9 +814,9 @@ export class sbiActor {
                 const dc = savingThrowMatch.groups.savedc;
                 const ability = savingThrowMatch.groups.saveability;
 
-                sUtils.assignToObject(itemData, "data.save.ability", this.convertToShortAbility(ability));
-                sUtils.assignToObject(itemData, "data.save.dc", parseInt(dc));
-                sUtils.assignToObject(itemData, "data.save.scaling", "flat");
+                sUtils.assignToObject(itemData, "system.save.ability", this.convertToShortAbility(ability));
+                sUtils.assignToObject(itemData, "system.save.dc", parseInt(dc));
+                sUtils.assignToObject(itemData, "system.save.scaling", "flat");
 
                 this.setDamageRolls(saveDescription, itemData, actor)
             }
@@ -829,9 +829,9 @@ export class sbiActor {
 
         if (match) {
             const uses = match.groups.perday;
-            sUtils.assignToObject(itemData, "data.uses.value", parseInt(uses));
-            sUtils.assignToObject(itemData, "data.uses.max", uses);
-            sUtils.assignToObject(itemData, "data.uses.per", "day");
+            sUtils.assignToObject(itemData, "system.uses.value", parseInt(uses));
+            sUtils.assignToObject(itemData, "system.uses.max", uses);
+            sUtils.assignToObject(itemData, "system.uses.per", "day");
         }
     }
 
@@ -843,15 +843,15 @@ export class sbiActor {
             const nearRange = parseInt(match.groups.near);
             const farRange = match.groups.far ? parseInt(match.groups.far) : null;
 
-            sUtils.assignToObject(itemData, "data.range.value", nearRange);
-            sUtils.assignToObject(itemData, "data.range.long", farRange);
-            sUtils.assignToObject(itemData, "data.range.units", "ft");
-            sUtils.assignToObject(itemData, "data.ability", "dex");
+            sUtils.assignToObject(itemData, "system.range.value", nearRange);
+            sUtils.assignToObject(itemData, "system.range.long", farRange);
+            sUtils.assignToObject(itemData, "system.range.units", "ft");
+            sUtils.assignToObject(itemData, "system.ability", "dex");
 
             if (text.match(/spell attack/i)) {
-                sUtils.assignToObject(itemData, "data.actionType", "rsak");
+                sUtils.assignToObject(itemData, "system.actionType", "rsak");
             } else {
-                sUtils.assignToObject(itemData, "data.actionType", "rwak");
+                sUtils.assignToObject(itemData, "system.actionType", "rwak");
             }
         }
     }
@@ -861,8 +861,8 @@ export class sbiActor {
         const match = sRegex.recharge.exec(text);
 
         if (match) {
-            sUtils.assignToObject(itemData, "data.recharge.value", parseInt(match.groups.recharge));
-            sUtils.assignToObject(itemData, "data.recharge.charged", true);
+            sUtils.assignToObject(itemData, "system.recharge.value", parseInt(match.groups.recharge));
+            sUtils.assignToObject(itemData, "system.recharge.charged", true);
         }
     }
 
@@ -873,13 +873,13 @@ export class sbiActor {
         if (match) {
             const reach = parseInt(match.groups.reach);
 
-            sUtils.assignToObject(itemData, "data.range.value", reach);
-            sUtils.assignToObject(itemData, "data.range.units", "ft");
+            sUtils.assignToObject(itemData, "system.range.value", reach);
+            sUtils.assignToObject(itemData, "system.range.units", "ft");
 
             if (text.match(/spell attack/i)) {
-                sUtils.assignToObject(itemData, "data.actionType", "msak");
+                sUtils.assignToObject(itemData, "system.actionType", "msak");
             } else {
-                sUtils.assignToObject(itemData, "data.actionType", "mwak");
+                sUtils.assignToObject(itemData, "system.actionType", "mwak");
             }
         }
     }
@@ -889,9 +889,9 @@ export class sbiActor {
         const match = sRegex.target.exec(text);
 
         if (match) {
-            sUtils.assignToObject(itemData, "data.target.value", match.groups.range);
-            sUtils.assignToObject(itemData, "data.target.type", match.groups.shape);
-            sUtils.assignToObject(itemData, "data.target.units", "ft");
+            sUtils.assignToObject(itemData, "system.target.value", match.groups.range);
+            sUtils.assignToObject(itemData, "system.target.type", match.groups.shape);
+            sUtils.assignToObject(itemData, "system.target.units", "ft");
         }
     }
 
@@ -922,33 +922,33 @@ export class sbiActor {
                 damageParts.push([`${plusDamageRoll}${modText}`, plusDamageType]);
             }
 
-            if (itemData.data.damage === undefined) {
-                itemData.data.damage = {};
+            if (itemData.system.damage === undefined) {
+                itemData.system.damage = {};
             }
 
             if (damageParts.length) {
-                const currentParts = itemData.data.damage.parts ?? [];
-                itemData.data.damage.parts = currentParts.concat(damageParts);
+                const currentParts = itemData.system.damage.parts ?? [];
+                itemData.system.damage.parts = currentParts.concat(damageParts);
             }
 
             // If the ability for the damage hasn't been set, try to find the correct 
             // one to use so that it doesn't just default to Strength.
-            if (!itemData.data.ability) {
+            if (!itemData.system.ability) {
                 if (match.groups.damagemod1) {
                     const damageMod = parseInt(match.groups.damagemod1);
 
                     if (damageMod === actor.system.abilities.str.mod) {
-                        sUtils.assignToObject(itemData, "data.ability", "str");
+                        sUtils.assignToObject(itemData, "system.ability", "str");
                     } else if (damageMod === actor.system.abilities.dex.mod) {
-                        sUtils.assignToObject(itemData, "data.ability", "dex");
+                        sUtils.assignToObject(itemData, "system.ability", "dex");
                     } else if (damageMod === actor.system.abilities.con.mod) {
-                        sUtils.assignToObject(itemData, "data.ability", "con");
+                        sUtils.assignToObject(itemData, "system.ability", "con");
                     } else if (damageMod === actor.system.abilities.int.mod) {
-                        sUtils.assignToObject(itemData, "data.ability", "int");
+                        sUtils.assignToObject(itemData, "system.ability", "int");
                     } else if (damageMod === actor.system.abilities.wis.mod) {
-                        sUtils.assignToObject(itemData, "data.ability", "wis");
+                        sUtils.assignToObject(itemData, "system.ability", "wis");
                     } else if (damageMod === actor.system.abilities.cha.mod) {
-                        sUtils.assignToObject(itemData, "data.ability", "cha");
+                        sUtils.assignToObject(itemData, "system.ability", "cha");
                     }
                 }
             }
@@ -957,10 +957,10 @@ export class sbiActor {
         const versatilematch = sRegex.versatile.exec(description);
 
         if (versatilematch) {
-            itemData.data.damage.versatile = versatilematch.groups.damageroll;
+            itemData.system.damage.versatile = versatilematch.groups.damageroll;
 
-            if (itemData.data.properties) {
-                itemData.data.properties.ver = true;
+            if (itemData.system.properties) {
+                itemData.system.properties.ver = true;
             }
         }
     }

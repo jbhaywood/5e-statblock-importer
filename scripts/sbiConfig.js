@@ -2,7 +2,7 @@ import { statblock } from "../testBlocks/uberNpc.js";
 
 export const sbiConfig = {};
 
-// Set 'debug' to true and set file above to the statblock in the 
+// Set 'autoDebug' to true and set file above to the statblock in the 
 // "testBlocks" folder you want to test. Doing this will make it
 // so that you only have to click the "Import Statblock" button.
 // No need to paste into the window and click the Import button.
