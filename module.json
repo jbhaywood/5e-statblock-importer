@@ -5,11 +5,11 @@
     "description": "Import monster and NPC statblocks for D&D 5e",
     "version": "1.82.00",
     "compatibility": {
-        "minimum": "0.8.0",
+        "minimum": "10",
         "maximum": "11",
         "verified": "11"
     },
-    "minimumCoreVersion": "0.8.0",
+    "minimumCoreVersion": "0.10.0",
     "compatibleCoreVersion": "11",
     "authors": [
         {
