@@ -443,7 +443,7 @@ export class sbiActor {
             const speedValue = speedData.value;
 
             await actor.update({
-                "data": {
+                "system": {
                     "attributes": {
                         "speed": {
                             "value": speedValue
@@ -460,7 +460,7 @@ export class sbiActor {
 
         if (otherSpeeds.length) {
             await actor.update({
-                "data": {
+                "system": {
                     "attributes": {
                         "speed": {
                             "special": otherSpeeds
