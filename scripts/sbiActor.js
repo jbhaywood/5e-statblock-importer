@@ -495,13 +495,13 @@ export class sbiActor {
                     return size;
             }
         };
-        
+
         const sizeValue = creatureData.size.toLowerCase();
         const swarmSizeValue = creatureData.swarmSize?.toLowerCase();
         const detailsData = {};
-        
+
         sUtils.assignToObject(detailsData, "system.traits.size", getSizeAbbreviation(sizeValue));
-        
+
         if (swarmSizeValue) {
             sUtils.assignToObject(detailsData, "system.details.type.swarm", getSizeAbbreviation(swarmSizeValue));
         }
@@ -509,11 +509,11 @@ export class sbiActor {
         sUtils.assignToObject(detailsData, "system.details.alignment", sUtils.capitalizeAll(creatureData.alignment?.trim()));
         sUtils.assignToObject(detailsData, "system.details.type.subtype", sUtils.capitalizeAll(creatureData.race?.trim()));
         sUtils.assignToObject(detailsData, "system.details.type.value", creatureData.type?.trim().toLowerCase());
-      
+
         const hasCustomType = creatureData.customType?.trim();
-        if(hasCustomType) {
-        sUtils.assignToObject(detailsData, "system.details.type.value", "custom");
-        sUtils.assignToObject(detailsData, "system.details.type.custom", sUtils.capitalizeAll(creatureData.customType?.trim()));
+        if (hasCustomType) {
+            sUtils.assignToObject(detailsData, "system.details.type.value", "custom");
+            sUtils.assignToObject(detailsData, "system.details.type.custom", sUtils.capitalizeAll(creatureData.customType?.trim()));
         }
 
         await actor.update(detailsData);
@@ -535,7 +535,7 @@ export class sbiActor {
 
                 const spellLevel = spell.name.toLowerCase();
                 const spellNames = spell.value;
-                const spellMatches =  [...spellLevel.matchAll(sRegex.spellcastingDetails)];
+                const spellMatches = [...spellLevel.matchAll(sRegex.spellcastingDetails)];
                 const slots = this.getGroupValue("slots", spellMatches);
                 const perday = this.getGroupValue("perday", spellMatches);
 
@@ -593,7 +593,7 @@ export class sbiActor {
         }
 
         // Set spellcasting ability.
-        const spellMatches =  [...description.matchAll(sRegex.spellcastingDetails)];
+        const spellMatches = [...description.matchAll(sRegex.spellcastingDetails)];
         let spellcastingAbility = this.getGroupValue("ability1", spellMatches);
 
         if (spellcastingAbility == null) {
@@ -793,7 +793,7 @@ export class sbiActor {
             saveDescription = description.slice(saveMatch.index);
         }
 
-        if (attackDescription.length) {
+        if (attackDescription?.length) {
             attackMatch = sRegex.attack.exec(attackDescription);
             if (attackMatch) {
                 itemData.type = "weapon";
