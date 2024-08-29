@@ -51,7 +51,8 @@ export class sbiParser {
                     continue;
                 }
 
-                const match = sRegex.getFirstMatch(line);
+                // Get the first block match, excluding the ones we already have
+                const match = sRegex.getFirstMatch(line, [...statBlocks.keys()]);
 
                 // This check is a little shaky, but it's the best we can do. We assume that if
                 // we've been going through the top blocks and hit a line that doesn't match anything
@@ -505,7 +506,7 @@ export class sbiParser {
 
             // Check to see if we've reached the end of the spell block by seeing if 
             // the next line is a title.
-            const nextLineIsTitle = index < validLines.length - 2
+            const nextLineIsTitle = index < validLines.length - 1
                 && sRegex.blockTitle.exec(validLines[index + 1]) != null;
 
             if (foundSpellBlock && nextLineIsTitle) {

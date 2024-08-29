@@ -107,7 +107,7 @@ export class sbiRegex {
         { r: this.villainActions, id: BlockID.villainActions },
     ]
 
-    static getFirstMatch(line) {
-        return this.lineCheckRegexes.find(obj => obj.r.exec(line));
+    static getFirstMatch(line, excludeIds = []) {
+        return this.lineCheckRegexes.find(obj => obj.r.exec(line) && !excludeIds.includes(obj.id));
     }
 }
