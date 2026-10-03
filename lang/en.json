@@ -1,0 +1,12 @@
+{
+    "SBI.Title": "5e Statblock Importer",
+    "SBI.Button": "Import Statblock",
+    "SBI.Import": "Import",
+    "SBI.Importing": "Importing...",
+    "SBI.FolderLabel": "Folder to import to:",
+    "SBI.NoFolder": "None",
+    "SBI.Placeholder": "Usage:\n- Paste the full statblock text into this box. Both the 2014 and 2024 WotC layouts are supported.\n- If you need to, you can edit the text here to fix any errors and then re-import.\n\nReport any bugs using the module link, and add the statblock you were trying to import.",
+    "SBI.Notifications.Empty": "5E STATBLOCK IMPORTER: Paste a statblock into the text box first.",
+    "SBI.Notifications.Success": "5E STATBLOCK IMPORTER: Imported {name}.",
+    "SBI.Notifications.Error": "5E STATBLOCK IMPORTER: An error has occurred. Please report it using the module link so it can get fixed."
+}

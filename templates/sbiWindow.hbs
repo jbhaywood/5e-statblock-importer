@@ -1,0 +1,18 @@
+<textarea id="sbi-input" name="statblock" wrap="hard" spellcheck="false" placeholder="{{placeholder}}">{{statblock}}</textarea>
+<footer id="sbi-bottom">
+    <label id="sbi-import-text" for="sbi-import-select">{{localize "SBI.FolderLabel"}}</label>
+    <select id="sbi-import-select" name="folder">
+        <option value="">{{localize "SBI.NoFolder"}}</option>
+        {{#each folders}}
+        <option value="{{this.id}}">{{this.name}}</option>
+        {{/each}}
+    </select>
+    <button id="sbi-import-button" type="submit" {{#if importing}}disabled{{/if}}>
+        <i class="fa-solid fa-file-import" inert></i>
+        {{#if importing}}
+        <span>{{localize "SBI.Importing"}}</span>
+        {{else}}
+        <span>{{localize "SBI.Import"}}</span>
+        {{/if}}
+    </button>
+</footer>

@@ -1,4 +1,5 @@
 import { sbiConfig } from "./sbiConfig.js";
+import { KnownLanguages, LanguageAliases } from "./sbiData.js";
 
 export class sbiUtils {
 
@@ -37,73 +38,150 @@ export class sbiUtils {
         return obj;
     }
 
+    static getFromObject(obj, path) {
+        return path.split(".").reduce((current, key) => current?.[key], obj);
+    }
+
+    // Generate a 16 character random ID, matching Foundry's own format.
+    static randomID() {
+        if (globalThis.foundry?.utils?.randomID) {
+            return foundry.utils.randomID();
+        }
+
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let id = "";
+        for (let i = 0; i < 16; i++) {
+            id += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return id;
+    }
+
+    // ==========================
+    // Compendium Functions    
+    // ==========================
+
     // Search all compendiums and get just the icon from the item, if found.
     // Don't get the whole item because the one from the statblock may be different.
     static async getImgFromPackItemAsync(itemName, type) {
-        let result = null;
-        const item = await this.getItemFromPacksAsync(itemName, type);
-
-        if (item) {
-            result = item.img;
-        }
-
-        return result;
+        const entry = this.findPackIndexEntry(itemName, type);
+        return entry?.img ?? null;
     }
 
-    static dndPacks = null;
+    static modernPacks = null;
+    static legacyPacks = null;
     static otherPacks = null;
 
-    static async getItemFromPacksAsync(itemName, type) {
-        let result = null;
-
-        // Create pack arrays once to save time.
-        if (this.dndPacks == null && this.otherPacks == null) {
-            // Look through the non-default packs first, since those are more
-            // likely to contain customized versions of the dnd5e items.
-            this.dndPacks = [];
+    // Group the available Item compendiums once so that lookups are quick. Non-system
+    // packs are searched first since they are more likely to contain customized versions
+    // of the dnd5e items. Within the system packs, the ones matching the world's rules
+    // version (2014 vs 2024) are preferred.
+    static getPackGroups() {
+        if (this.otherPacks == null) {
+            this.modernPacks = [];
+            this.legacyPacks = [];
             this.otherPacks = [];
 
             for (const pack of game.packs) {
-                if (pack.metadata.id.startsWith("dnd5e")) {
-                    this.dndPacks.push(pack);
+                if (pack.documentName !== "Item") continue;
+
+                if (pack.metadata.packageName === "dnd5e" || pack.metadata.id.startsWith("dnd5e.")) {
+                    if (/24$/.test(pack.metadata.name)) {
+                        this.modernPacks.push(pack);
+                    } else {
+                        this.legacyPacks.push(pack);
+                    }
                 } else {
                     this.otherPacks.push(pack);
                 }
             }
         }
 
-        for (const pack of this.otherPacks) {
-            result = await this.getItemFromPackAsync(pack, itemName);
+        const modernRules = this.isModernRules();
+        const systemPacks = modernRules
+            ? [...this.modernPacks, ...this.legacyPacks]
+            : [...this.legacyPacks, ...this.modernPacks];
 
-            if (result && (!type || result.type === type)) {
-                break;
-            }
+        return [...this.otherPacks, ...systemPacks];
+    }
+
+    static isModernRules() {
+        try {
+            return game.settings.get("dnd5e", "rulesVersion") === "modern";
+        } catch {
+            return true;
         }
+    }
 
-        if (result == null) {
-            for (const pack of this.dndPacks) {
-                result = await this.getItemFromPackAsync(pack, itemName);
+    // Find a compendium index entry by name (case insensitive), optionally restricted to a type
+    // or a list of types in order of preference.
+    static findPackIndexEntry(itemName, type) {
+        if (!itemName) return null;
+        const lowerName = itemName.toLowerCase().trim();
+        const types = Array.isArray(type) ? type : [type];
 
-                if (result && (!type || result.type === type)) {
-                    break;
+        for (const wantedType of types) {
+            for (const pack of this.getPackGroups()) {
+                const entry = pack.index.find(e => e.name.toLowerCase() === lowerName && (!wantedType || e.type === wantedType));
+
+                if (entry) {
+                    return { pack, entry, img: entry.img, uuid: entry.uuid ?? `Compendium.${pack.collection}.Item.${entry._id}` };
                 }
             }
         }
 
-        return result;
+        return null;
     }
 
-    static async getItemFromPackAsync(pack, itemName) {
-        let result = null;
-        const lowerName = itemName.toLowerCase();
-        const item = pack.index.find(e => lowerName === e.name.toLowerCase());
+    // Get a plain data object for the compendium item with the given name, if it exists.
+    static async getItemFromPacksAsync(itemName, type) {
+        const found = this.findPackIndexEntry(itemName, type);
+        if (!found) return null;
 
-        if (item) {
-            const itemDoc = await pack.getDocument(item._id);
-            result = itemDoc.toObject();
+        const itemDoc = await found.pack.getDocument(found.entry._id);
+        if (!itemDoc) return null;
+
+        const data = itemDoc.toObject();
+        delete data._id;
+        delete data.folder;
+        delete data.sort;
+        delete data.ownership;
+        data._stats = { compendiumSource: itemDoc.uuid };
+
+        return data;
+    }
+
+    // ==========================
+    // Language Functions    
+    // ==========================
+
+    static languageMap = null;
+
+    // Returns a Map of lower-case language label -> dnd5e language key, built from
+    // CONFIG.DND5E.languages when available so that custom languages are picked up.
+    static getLanguageMap() {
+        if (this.languageMap) return this.languageMap;
+
+        const map = new Map();
+        for (const key of KnownLanguages) {
+            map.set(key, key);
+        }
+        for (const [alias, key] of Object.entries(LanguageAliases)) {
+            map.set(alias, key);
         }
 
-        return result;
+        const config = globalThis.CONFIG?.DND5E?.languages;
+        const walk = (entries) => {
+            for (const [key, data] of Object.entries(entries ?? {})) {
+                const label = typeof data === "string" ? data : data?.label;
+                if (label) map.set(String(label).toLowerCase(), key);
+                map.set(key.toLowerCase(), key);
+                if (data?.children) walk(data.children);
+            }
+        };
+        walk(config);
+
+        this.languageMap = map;
+        return map;
     }
 
     // ==========================
@@ -130,6 +208,7 @@ export class sbiUtils {
 
     // capitalizeFirstLetter("passive perception") => "Passive perception"
     static capitalizeFirstLetter(string) {
+        if (!string) return string;
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
 
@@ -157,6 +236,12 @@ export class sbiUtils {
         }
 
         return result;
+    }
+
+    // parseSignedInt("−2") => -2, parseSignedInt("+3") => 3
+    static parseSignedInt(string) {
+        if (string == null) return NaN;
+        return parseInt(String(string).replace(/[−–]/g, "-").replace(/\+/g, "").trim());
     }
 
     static exactMatch(string, regex) {
@@ -191,8 +276,8 @@ export class sbiUtils {
     static combineToString(strings) {
         return strings
             .join(" ")
-            .replace("  ", " ")
-            .replace("- ", "-");
+            .replace(/\s{2,}/g, " ")
+            .replace(/(\w)- (\w)/g, "$1-$2");
     }
 
     // ==========================

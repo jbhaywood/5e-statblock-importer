@@ -1,27 +1,32 @@
 {
     "id": "5e-statblock-importer",
-    "name": "5e-statblock-importer",
     "title": "5e Statblock Importer",
-    "description": "Import monster and NPC statblocks for D&D 5e",
-    "version": "1.83.03",
+    "description": "Import monster and NPC statblocks (2014 and 2024 layouts) for the D&D Fifth Edition system.",
+    "version": "2.0.0",
     "compatibility": {
-        "minimum": "10",
-        "maximum": "12",
-        "verified": "12"
+        "minimum": "14",
+        "verified": "14"
     },
-    "minimumCoreVersion": "10",
-    "compatibleCoreVersion": "12",
     "authors": [
         {
             "name": "ArcaneRoboBrain",
             "discord": "ArcaneRoboBrain#6885",
+            "flags": {}
+        },
+        {
+            "name": "joebags99",
             "flags": {}
         }
     ],
     "relationships": {
         "systems": [
             {
-                "id": "dnd5e"
+                "id": "dnd5e",
+                "type": "system",
+                "compatibility": {
+                    "minimum": "6.0.0",
+                    "verified": "6.0.5"
+                }
             }
         ]
     },
@@ -31,7 +36,14 @@
     "styles": [
         "./styles/sbi.css"
     ],
-    "url": "https://github.com/jbhaywood/5e-statblock-importer",
-    "manifest": "https://raw.githubusercontent.com/jbhaywood/5e-statblock-importer/main/module.json",
-    "download": "https://github.com/jbhaywood/5e-statblock-importer/archive/v1.83.03.zip"
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json"
+        }
+    ],
+    "url": "https://github.com/joebags99/5e-statblock-importer-2026",
+    "manifest": "https://raw.githubusercontent.com/joebags99/5e-statblock-importer-2026/main/module.json",
+    "download": "https://github.com/joebags99/5e-statblock-importer-2026/archive/v2.0.0.zip"
 }

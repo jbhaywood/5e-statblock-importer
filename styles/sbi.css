@@ -1,28 +1,38 @@
 #sbi-main-button {
-    width: 97%;
+    flex: 1 1 100%;
 }
 
-#sbi-bottom {
+.sbi-window .window-content {
     display: flex;
-    gap: 5px;
+    flex-direction: column;
+    gap: 6px;
 }
 
-#sbi-import-text {
-    align-self: center;
-}
-
-#sbi-import-select {
-    width: 33%;
-    align-self: center;
-}
-
-#sbi-import-button {
-    width: 33%;
-    margin-left: auto;
-}
-
-#sbi-input {
-    height: 500px;
-    margin-bottom: 5px;
+.sbi-window #sbi-input {
+    flex: 1 1 auto;
+    min-height: 200px;
     resize: none;
+    font-family: var(--font-monospace, monospace);
+    font-size: var(--font-size-13, 13px);
+    white-space: pre-wrap;
+}
+
+.sbi-window #sbi-bottom {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sbi-window #sbi-import-text {
+    flex: 0 0 auto;
+}
+
+.sbi-window #sbi-import-select {
+    flex: 1 1 33%;
+}
+
+.sbi-window #sbi-import-button {
+    flex: 0 0 33%;
+    margin-left: auto;
 }
